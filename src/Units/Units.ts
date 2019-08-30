@@ -1,0 +1,6 @@
+export { default as Soldier } from './Soldier'
+export { default as Assassin } from './Assassin'
+export { default as Knight } from './Knight'
+export { default as Archer } from './Archer'
+export { default as Wizard } from './Wizard'
+export { default as Priest } from './Priest'
