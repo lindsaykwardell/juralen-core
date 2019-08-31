@@ -1,8 +1,8 @@
 import Unit from "./Unit"
 
 class Assassin extends Unit {
-  constructor() {
-    super();
+  constructor(x: number, y: number, playerId: string) {
+    super(x, y, playerId);
     this.name = "Assassin";
     this.cost = 5;
     this.move = 1;

@@ -1,30 +1,36 @@
-export default class Unit {
-  public ID: number
-  public name: string;
-  public cost: number;
-  public move: number;
-  public movesLeft: number;
-  public maxMoves: number;
-  public attack: number;
-  public health: number;
-  public maxHealth: number;
-  public range: number;
-  public description: string;
-  public controlledBy: number | null
+import uuid from 'uuid/v4'
 
-  constructor() {
-    this.ID = Math.floor(Math.random() * 100000000000000);
-    this.name = "Unit";
-    this.cost = 0;
-    this.move = 0;
-    this.movesLeft = 0;
-    this.maxMoves = 0;
-    this.attack = 0;
-    this.health = 0;
-    this.maxHealth = 0;
-    this.range = 0;
-    this.description = "You shouldn't see this.";
-    this.controlledBy = null;
+export default class Unit {
+  public id: string
+  public name: string
+  public cost: number
+  public move: number
+  public movesLeft: number
+  public maxMoves: number
+  public attack: number
+  public health: number
+  public maxHealth: number
+  public range: number
+  public description: string
+  public controlledBy: string
+  public x: number
+  public y: number
+
+  constructor(x: number, y: number, playerId: string) {
+    this.x = x
+    this.y = y
+    this.id = uuid()
+    this.name = 'Unit'
+    this.cost = 0
+    this.move = 0
+    this.movesLeft = 0
+    this.maxMoves = 0
+    this.attack = 0
+    this.health = 0
+    this.maxHealth = 0
+    this.range = 0
+    this.description = "You shouldn't see this."
+    this.controlledBy = playerId
   }
 
   isBuilt() {
@@ -44,14 +50,14 @@ export default class Unit {
   }
 
   takeDamage(dmg) {
-    this.health -= dmg;
+    this.health -= dmg
   }
 
   isDead() {
     if (this.health <= 0) {
-      return true;
+      return true
     } else {
-      return false;
+      return false
     }
   }
 }

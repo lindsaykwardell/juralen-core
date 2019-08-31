@@ -1,8 +1,4 @@
 import Structure from './Structures/Structure'
-import Plains from './Terrain/Plains'
-import { Town } from './Structures/Structures'
-import Mountain from './Terrain/Mountain'
-import Forest from './Terrain/Forest'
 
 export default class Cell {
   public x: number
@@ -10,8 +6,7 @@ export default class Cell {
   public structure: Structure | null
   public terrain: Terrain | null
   public defBonus: number
-  public units: any[]
-  public controlledBy: number | null
+  public controlledBy: string | null
   public passable: boolean
 
   constructor(x: number, y: number) {
@@ -20,9 +15,12 @@ export default class Cell {
     this.structure = null
     this.terrain = null
     this.defBonus = 0
-    this.units = []
     this.controlledBy = null
     this.passable = true
+  }
+
+  takeDamage(damage) {
+    this.defBonus -= damage
   }
 
   buildStructure(struct: typeof Structure) {
@@ -34,6 +32,7 @@ export default class Cell {
     } else {
       this.structure = new struct()
     }
+    this.terrain = Terrain.Plains
     this.defBonus = this.structure.initDefBonus
   }
 }

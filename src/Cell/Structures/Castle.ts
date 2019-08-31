@@ -9,4 +9,6 @@ export default class Castle extends Structure {
     this.initDefBonus = 5
     this.fortifyCost = 1
   }
+
+  public static structureName = "Castle"
 }

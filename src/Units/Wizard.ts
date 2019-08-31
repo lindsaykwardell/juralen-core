@@ -1,8 +1,8 @@
 import Unit from "./Unit";
 
 class Wizard extends Unit {
-  constructor() {
-    super();
+  constructor(x: number, y: number, playerId: string) {
+    super(x, y, playerId);
     this.name = "Wizard";
     this.cost = 7;
     this.move = 0.5;

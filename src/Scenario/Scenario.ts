@@ -1,52 +1,82 @@
-import Cell from "../Cell/Cell"
-import Plains from "../Cell/Terrain/Plains";
-import Mountain from "../Cell/Terrain/Mountain";
-import Forest from "../Cell/Terrain/Forest";
-import { Town } from "../Cell/Structures/Structures";
+import Cell from '../Cell/Cell'
+import Plains from '../Cell/Terrain/Plains'
+import Mountain from '../Cell/Terrain/Mountain'
+import Forest from '../Cell/Terrain/Forest'
+import { Town, Castle } from '../Cell/Structures/Structures'
+import Player from '../Player/Player'
+import Unit from '../Units/Unit'
+import { Soldier } from '../Units/Units'
 
 export default class Scenario {
-  // constructor(
-  //   scenarioType = "quick",
-  //   loadScenario = { gridSize: { x: 9, y: 9 } }
-  // ) {
-  //   if (scenarioType === "quick") {
-  //     this.initialGrid = this.generateGrid({ ...loadScenario.gridSize });
-  //     this.initialResources = {
-  //       Player1: { actions: 4, gold: 5, farms: 1, towns: 1, units: 0 },
-  //       Player2: { actions: 4, gold: 5, farms: 1, towns: 1, units: 0 }
-  //     };
-  //     this.me = "Player1";
-  //     this.notMe = "Player2";
-  //     this.objectives = [
-  //       {
-  //         type: "boardControl",
-  //         value: 2
-  //       },
-  //       {
-  //         type: "belowMinTownCount",
-  //         value: 0
-  //       }
-  //     ];
-  //     this.beforeStart = [];
-  //     this.afterEnd = [];
-  //   }
-  // }
+  private x: number
+  private y: number
+  public grid: Cell[][]
+  public players: Player[]
+  public units: Unit[]
+  public activePlayer: string
+  public objectives: IObjective[]
+  public timeline: string[] = []
 
-  generateGrid = (gridSize = { x: 9, y: 9 }) => {
-    const grid: Cell[][] = [];
-    for (let y = 0; y < gridSize.y; y++) {
-      const row: Cell[] = [];
-      for (let x = 0; x < gridSize.x; x++) {
-        const thisCell = this.generateCell(x, y);
-
-        row.push(thisCell);
-      }
-      grid.push(row);
+  constructor(playerCount: number) {
+    this.x = 9
+    this.y = 9
+    this.grid = this.generateGrid()
+    this.players = []
+    this.units = []
+    for (let i = 0; i < playerCount; i++) {
+      this.players.push(
+        new Player(`Player${i + 1}`, {
+          actions: 4,
+          gold: 2,
+          farms: 1,
+          towns: 1
+        })
+      )
     }
-    return grid;
-  };
+    this.players.forEach(player => {
+      let done = false
+      while (!done) {
+        const x = Math.floor(Math.random() * this.x)
+        const y = Math.floor(Math.random() * this.y)
+        const cell = this.grid[y][x]
+        if (!cell.structure) {
+          cell.controlledBy = player.id
+          cell.buildStructure(Castle)
+          for (let i = 0; i < 3; i++) {
+            this.units.push(new Soldier(cell.x, cell.y, player.id))
+          }
+          done = true
+        }
+      }
+    })
+    this.activePlayer = this.players[this.randomPlayer(this.players.length)].id
+    this.objectives = [
+      {
+        objective: Objective.BoardControl,
+        value: 2
+      },
+      {
+        objective: Objective.BelowMinTownCount,
+        value: 0
+      }
+    ]
+  }
 
-  generateCell(x: number, y: number) {
+  public generateGrid = () => {
+    const grid: Cell[][] = []
+    for (let y = 0; y < this.y; y++) {
+      const row: Cell[] = []
+      for (let x = 0; x < this.x; x++) {
+        const thisCell = this.generateCell(x, y)
+
+        row.push(thisCell)
+      }
+      grid.push(row)
+    }
+    return grid
+  }
+
+  private generateCell(x: number, y: number) {
     const roll = Math.floor(Math.random() * 101)
     if (roll <= 12) {
       // Make a Plains with a Town
@@ -68,34 +98,55 @@ export default class Scenario {
     return cell
   }
 
-  // checkObjectives = state => {
-  //   return new Promise((resolve, reject) => {
-  //     this.objectives.forEach(objective => {
-  //       switch (objective.type) {
-  //         case "boardControl":
-  //           let gridControlCount = 0;
-  //           state.grid.forEach(row => {
-  //             row.forEach(cell => {
-  //               if (cell.controlledBy === state.me) gridControlCount++;
-  //             });
-  //           });
-  //           if (
-  //             gridControlCount >=
-  //             (state.grid[0].length * state.grid.length) / objective.value
-  //           ) {
-  //             reject();
-  //           }
-  //           break;
-  //         case "belowMinTownCount":
-  //           if (state.resources[state.notMe].towns === 0) {
-  //             reject();
-  //           }
-  //           break;
-  //         default:
-  //         // Do nothing.
-  //       }
-  //     });
-  //     resolve();
-  //   });
-  // };
+  public checkObjectives = (id: string) => {
+    return new Promise((resolve, reject) => {
+      const thisPlayer = this.players.find(player => player.id === id)
+      this.objectives.forEach(objective => {
+        switch (objective.objective) {
+          case Objective.BoardControl:
+            let gridControlCount: number = 0
+            this.grid.forEach(row => {
+              row.forEach(cell => {
+                if (cell.controlledBy === id) gridControlCount++
+              })
+            })
+
+            if (gridControlCount >= this.gridSize() / objective.value) reject()
+            break
+          case Objective.BelowMinTownCount:
+            if (thisPlayer!.resources.towns <= 0) reject()
+            break
+          default:
+          // Do nothing
+        }
+      })
+      resolve()
+    })
+  }
+
+  public nextPlayer(): Player {
+    const key = this.players.findIndex(
+      player => player.id === this.activePlayer
+    )
+    if (key + 1 === this.players.length) return this.players[0]
+    else return this.players[key + 1]
+  }
+
+  private randomPlayer(count: number) {
+    return Math.floor(Math.random() * count)
+  }
+
+  private gridSize(): number {
+    return this.x * this.y
+  }
+}
+
+interface IObjective {
+  objective: Objective
+  value: number
+}
+
+enum Objective {
+  BoardControl,
+  BelowMinTownCount
 }

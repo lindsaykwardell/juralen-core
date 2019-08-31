@@ -33,4 +33,6 @@ export default class Town extends Structure {
       this.buildUnits.push(Priest)
     }
   }
+
+  public static structureName = 'Town'
 }
