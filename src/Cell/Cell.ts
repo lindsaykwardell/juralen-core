@@ -34,6 +34,7 @@ export default class Cell {
     }
     this.terrain = Terrain.Plains
     this.defBonus = this.structure.initDefBonus
+    this.passable = true
   }
 }
 

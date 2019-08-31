@@ -106,13 +106,25 @@ ${
           break
         case 'my':
           switch (command[2]) {
+            case 'structure':
+            case 'structures':
+            case 'building':
+            case 'buildings':
+              console.log(
+                game
+                  .Cells()
+                  .controlledBy(game.activePlayer()!.id)
+                  .hasStructure()
+                  .display()
+              )
+              break
             case 'castle':
             case 'castles':
               console.log(
                 game
                   .Cells()
                   .controlledBy(game.activePlayer()!.id)
-                  .hasStructure(Castle.structureName)
+                  .hasStructure([Castle.structureName])
                   .display()
               )
               break
@@ -122,7 +134,7 @@ ${
                 game
                   .Cells()
                   .controlledBy(game.activePlayer()!.id)
-                  .hasStructure(Town.structureName)
+                  .hasStructure([Town.structureName])
                   .display()
               )
               break
@@ -142,6 +154,19 @@ ${
                   .display()
               )
               break
+            case 'resources':
+              const { actions, gold } = game.activePlayer()!.resources
+              const farms = game.farmsOwnedBy(game.activePlayer()!.id)
+              const towns = game.townsOwnedBy(game.activePlayer()!.id)
+              const units = game
+                .Units()
+                .controlledBy(game.activePlayer()!.id)
+                .display().length
+              console.log(`Actions: ${actions}
+Gold: ${gold}
+Farms: ${farms}
+Towns/Castles: ${towns}
+Units: ${units}`)
           }
           break
         case 'range':

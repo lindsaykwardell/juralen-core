@@ -27,9 +27,7 @@ export default class Scenario {
       this.players.push(
         new Player(`Player${i + 1}`, {
           actions: 4,
-          gold: 2,
-          farms: 1,
-          towns: 1
+          gold: 2
         })
       )
     }
@@ -98,23 +96,52 @@ export default class Scenario {
     return cell
   }
 
+  public Units = () => {
+    UnitSet.unitSet = this.units
+    return UnitSet
+  }
+
+  public Cells = () => {
+    CellSet.cellSet = []
+    CellSet.unitSet = this.units
+    this.grid.forEach(row => {
+      row.forEach(cell => CellSet.cellSet.push(cell))
+    })
+
+    return CellSet
+  }
+
+  public Players = () => {
+    PlayerSet.playerSet = this.players
+    return PlayerSet
+  }
+
   public checkObjectives = (id: string) => {
     return new Promise((resolve, reject) => {
       const thisPlayer = this.players.find(player => player.id === id)
       this.objectives.forEach(objective => {
         switch (objective.objective) {
           case Objective.BoardControl:
-            let gridControlCount: number = 0
-            this.grid.forEach(row => {
-              row.forEach(cell => {
-                if (cell.controlledBy === id) gridControlCount++
-              })
-            })
-
-            if (gridControlCount >= this.gridSize() / objective.value) reject()
+            if (
+              this.Cells()
+                .controlledBy(id)
+                .display().length >=
+              this.gridSize() / objective.value
+            ) {
+              this.players.find(player => player.id === id)!.hasLost = true
+              reject()
+            }
             break
           case Objective.BelowMinTownCount:
-            if (thisPlayer!.resources.towns <= 0) reject()
+            if (
+              this.Cells()
+                .controlledBy(thisPlayer!.id)
+                .hasStructure()
+                .display().length <= 0
+            ) {
+              this.players.find(player => player.id === id)!.hasLost = true
+              reject()
+            }
             break
           default:
           // Do nothing
@@ -125,11 +152,14 @@ export default class Scenario {
   }
 
   public nextPlayer(): Player {
-    const key = this.players.findIndex(
+    const activePlayers = this.Players()
+      .hasNotLost()
+      .display()
+    const key = activePlayers.findIndex(
       player => player.id === this.activePlayer
     )
-    if (key + 1 === this.players.length) return this.players[0]
-    else return this.players[key + 1]
+    if (key + 1 === activePlayers.length) return activePlayers[0]
+    else return activePlayers[key + 1]
   }
 
   private randomPlayer(count: number) {
@@ -149,4 +179,111 @@ interface IObjective {
 enum Objective {
   BoardControl,
   BelowMinTownCount
+}
+
+interface IUnitSet {
+  unitSet: Unit[]
+  refresh: (val: Unit[]) => IUnitSet
+  atLoc: (x: number, y: number) => IUnitSet
+  controlledBy: (id: string) => IUnitSet
+  notControlledBy: (id: string) => IUnitSet
+  display: () => Unit[]
+  is: (names: string[]) => IUnitSet
+}
+
+const UnitSet: IUnitSet = {
+  unitSet: [],
+  refresh(val: Unit[]) {
+    this.unitSet = val
+    return this
+  },
+  atLoc(x: number, y: number) {
+    this.unitSet = this.unitSet.filter(unit => unit.x === x && unit.y === y)
+    return this
+  },
+  controlledBy(id: string) {
+    this.unitSet = this.unitSet.filter(unit => unit.controlledBy === id)
+    return this
+  },
+  notControlledBy(id: string) {
+    this.unitSet = this.unitSet.filter(unit => unit.controlledBy !== id)
+    return this
+  },
+  is(names: string[]) {
+    this.unitSet = this.unitSet.filter(unit => names.includes(unit.name))
+    return this
+  },
+  display() {
+    return [...this.unitSet]
+  }
+}
+
+interface ICellSet {
+  unitSet: Unit[]
+  cellSet: Cell[]
+  atLoc: (x: number, y: number) => Cell
+  inRow: (row: number) => ICellSet
+  inCol: (col: number) => ICellSet
+  hasStructure: (name?: string[]) => ICellSet
+  hasUnit: (name?: string[]) => ICellSet
+  controlledBy: (id: string) => ICellSet
+  display: () => Cell[]
+}
+
+const CellSet: ICellSet = {
+  unitSet: [],
+  cellSet: [],
+  atLoc(x: number, y: number) {
+    this.cellSet = this.cellSet.filter(cell => cell.x === x && cell.y === y)
+    return this.cellSet[0]
+  },
+  inRow(row: number) {
+    this.cellSet = this.cellSet.filter(cell => cell.x === row)
+    return this
+  },
+  inCol(col: number) {
+    this.cellSet = this.cellSet.filter(cell => cell.x === col)
+    return this
+  },
+  hasStructure(struct?: string[]) {
+    this.cellSet = this.cellSet.filter(
+      cell =>
+        cell.structure &&
+        (struct ? struct!.includes(cell.structure.name) : true)
+    )
+    return this
+  },
+  hasUnit(names?: string[]) {
+    this.cellSet = this.cellSet.filter(
+      cell =>
+        UnitSet.refresh(this.unitSet)
+          .atLoc(cell.x, cell.y)
+          .display().length > 0 && (names ? UnitSet.is(names) : true)
+    )
+    return this
+  },
+  controlledBy(id: string) {
+    this.cellSet = this.cellSet.filter(cell => cell.controlledBy === id)
+    return this
+  },
+  display() {
+    return this.cellSet
+  }
+}
+
+interface IPlayerSet {
+  playerSet: Player[]
+  hasNotLost: () => IPlayerSet
+  display: () => Player[]
+}
+
+const PlayerSet: IPlayerSet = {
+  playerSet: [],
+  hasNotLost() {
+    this.playerSet = this.playerSet.filter(player => !player.hasLost)
+    return this
+  },
+  display() {
+    return this.playerSet
+  }
 }

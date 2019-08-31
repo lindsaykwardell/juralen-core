@@ -12,7 +12,7 @@ export default class Game {
     this.scenario = new Scenario(playerCount)
     const startingCell = this.Cells()
       .controlledBy(this.scenario.activePlayer)
-      .hasStructure('Castle')
+      .hasStructure(['Castle'])
       .display()[0]
     this.x = startingCell.x
     this.y = startingCell.y
@@ -80,7 +80,7 @@ export default class Game {
       if (this.activePlayer()!.resources.gold - newUnit.cost < 0)
         reject(`You do not have enough gold!`)
       else if (
-        this.activePlayer()!.resources.farms <=
+        this.farmsOwnedBy(this.activePlayer()!.id) <=
         this.Units()
           .controlledBy(this.activePlayer()!.id)
           .display().length
@@ -100,13 +100,14 @@ export default class Game {
 
   public getCellsInRange = () => {
     const inRangeCells: { x: number; y: number }[] = []
-    this.scenario.grid.forEach(row => {
-      row.forEach(cell => {
+    this.scenario
+      .Cells()
+      .display()
+      .forEach(cell => {
         if (this.isInRange(cell.x, cell.y)) {
           inRangeCells.push({ x: cell.x, y: cell.y })
         }
       })
-    })
     return inRangeCells
   }
 
@@ -141,7 +142,7 @@ export default class Game {
           .display()[0].controlledBy
         resolve(`${this.activePlayer()!.name} has moved units to ${x},${y}`)
       } else {
-        reject('Not enough actions')
+        reject("We can't get there.")
       }
     })
   }
@@ -266,7 +267,7 @@ export default class Game {
   public isInRange = (x: number, y: number) => {
     return (
       this.selectedUnitList.length > 0 &&
-      this.Cells().atLoc(x, y).terrain !== 'Mountain' &&
+      this.Cells().atLoc(x, y).passable !== false &&
       this.activePlayer()!.resources.actions >=
         this.getMoveCost() *
           this.getDistance(
@@ -290,11 +291,59 @@ export default class Game {
   }
 
   public endTurn = () => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+      this.scenario.units.forEach(unit => {
+        unit.movesLeft = unit.maxMoves
+      })
+      const allPriests = this.Units()
+        .is(['Priest'])
+        .display()
+      allPriests.forEach(priest => {
+        console.log('Priest found in location', priest.x, priest.y)
+        const units = this.Units()
+          .atLoc(priest.x, priest.y)
+          .display()
+        units.forEach(unit => {
+          if (unit.id !== priest.id && unit.health < unit.maxHealth) {
+            console.log('Healing!')
+            unit.health++
+          }
+        })
+      })
+      const prevPlayer = this.activePlayer()!.id
       this.scenario.activePlayer = this.scenario.nextPlayer().id
+      this.scenario.checkObjectives(prevPlayer).catch(() => {
+        console.log(
+          `${
+            this.scenario.players.find(player => player.id === prevPlayer)!.name
+          } has lost!`
+        )
+      })
+      this.gatherResources()
       resolve(`${this.activePlayer()!.name}'s turn`)
     })
   }
+
+  public gatherResources = () => {
+    const farms = this.farmsOwnedBy(this.activePlayer()!.id)
+    const towns = this.townsOwnedBy(this.activePlayer()!.id)
+
+    this.activePlayer()!.resources.actions = towns
+    this.activePlayer()!.resources.gold += farms
+  }
+
+  public farmsOwnedBy = (id: string) =>
+    this.scenario
+      .Cells()
+      .controlledBy(id)
+      .display().length
+
+  public townsOwnedBy = (id: string) =>
+    this.scenario
+      .Cells()
+      .controlledBy(id)
+      .hasStructure()
+      .display().length
 
   public activePlayer = () =>
     this.scenario.players.find(
@@ -311,84 +360,7 @@ export default class Game {
     loc2: { x: number; y: number }
   ) => Math.abs(loc1.x - loc2.x) + Math.abs(loc1.y - loc2.y)
 
-  public Units = () => {
-    UnitSet.unitSet = this.scenario.units
+  public Units = () => this.scenario.Units()
 
-    return UnitSet
-  }
-
-  public Cells = () => {
-    CellSet.cellSet = []
-    this.scenario.grid.forEach(row => {
-      row.forEach(cell => CellSet.cellSet.push(cell))
-    })
-
-    return CellSet
-  }
-}
-
-interface IUnitSet {
-  unitSet: Unit[]
-  atLoc: (x: number, y: number) => IUnitSet
-  controlledBy: (id: string) => IUnitSet
-  notControlledBy: (id: string) => IUnitSet
-  display: () => Unit[]
-}
-
-const UnitSet: IUnitSet = {
-  unitSet: [],
-  atLoc(x: number, y: number) {
-    this.unitSet = this.unitSet.filter(unit => unit.x === x && unit.y === y)
-    return this
-  },
-  controlledBy(id: string) {
-    this.unitSet = this.unitSet.filter(unit => unit.controlledBy === id)
-    return this
-  },
-  notControlledBy(id: string) {
-    this.unitSet = this.unitSet.filter(unit => unit.controlledBy !== id)
-    return this
-  },
-  display() {
-    return [...this.unitSet]
-  }
-}
-
-interface ICellSet {
-  cellSet: Cell[]
-  atLoc: (x: number, y: number) => Cell
-  inRow: (row: number) => ICellSet
-  inCol: (col: number) => ICellSet
-  hasStructure: (name: string) => ICellSet
-  controlledBy: (id: string) => ICellSet
-  display: () => Cell[]
-}
-
-const CellSet: ICellSet = {
-  cellSet: [],
-  atLoc(x: number, y: number) {
-    this.cellSet = this.cellSet.filter(cell => cell.x === x && cell.y === y)
-    return this.cellSet[0]
-  },
-  inRow(row: number) {
-    this.cellSet = this.cellSet.filter(cell => cell.x === row)
-    return this
-  },
-  inCol(col: number) {
-    this.cellSet = this.cellSet.filter(cell => cell.x === col)
-    return this
-  },
-  hasStructure(struct: string) {
-    this.cellSet = this.cellSet.filter(
-      cell => cell.structure && cell.structure.name === struct
-    )
-    return this
-  },
-  controlledBy(id: string) {
-    this.cellSet = this.cellSet.filter(cell => cell.controlledBy === id)
-    return this
-  },
-  display() {
-    return this.cellSet
-  }
+  public Cells = () => this.scenario.Cells()
 }
