@@ -332,6 +332,10 @@ export default class Game {
     this.activePlayer()!.resources.gold += farms
   }
 
+  public analyze = () => {
+    return this.activePlayer()!.ai(this.scenario)
+  }
+
   public farmsOwnedBy = (id: string) =>
     this.scenario
       .Cells()

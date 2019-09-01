@@ -1,3 +1,4 @@
+import { PlayerType } from './../Player/Player'
 import Cell from '../Cell/Cell'
 import Plains from '../Cell/Terrain/Plains'
 import Mountain from '../Cell/Terrain/Mountain'
@@ -25,7 +26,7 @@ export default class Scenario {
     this.units = []
     for (let i = 0; i < playerCount; i++) {
       this.players.push(
-        new Player(`Player${i + 1}`, {
+        new Player(`Player${i + 1}`, PlayerType.Human, {
           actions: 4,
           gold: 2
         })
@@ -169,6 +170,16 @@ export default class Scenario {
   private gridSize(): number {
     return this.x * this.y
   }
+
+  public getDistance = getDistance
+
+  public getMoveCost = (units: Unit[]) => {
+    let moveCost = 0
+    units.forEach(unit => {
+      moveCost += unit.move
+    })
+    return moveCost
+  }
 }
 
 interface IObjective {
@@ -185,6 +196,7 @@ interface IUnitSet {
   unitSet: Unit[]
   refresh: (val: Unit[]) => IUnitSet
   atLoc: (x: number, y: number) => IUnitSet
+  withinDistance: (val: number, cell: { x: number; y: number }) => IUnitSet
   controlledBy: (id: string) => IUnitSet
   notControlledBy: (id: string) => IUnitSet
   display: () => Unit[]
@@ -199,6 +211,13 @@ const UnitSet: IUnitSet = {
   },
   atLoc(x: number, y: number) {
     this.unitSet = this.unitSet.filter(unit => unit.x === x && unit.y === y)
+    return this
+  },
+  withinDistance(val: number, cell: { x: number; y: number }) {
+    this.unitSet = this.unitSet.filter(
+      unit =>
+        val >= getDistance({ x: unit.x, y: unit.y }, { x: cell.x, y: cell.y })
+    )
     return this
   },
   controlledBy(id: string) {
@@ -227,6 +246,7 @@ interface ICellSet {
   hasStructure: (name?: string[]) => ICellSet
   hasUnit: (name?: string[]) => ICellSet
   controlledBy: (id: string) => ICellSet
+  notControlledBy: (id: string) => ICellSet
   display: () => Cell[]
 }
 
@@ -266,6 +286,10 @@ const CellSet: ICellSet = {
     this.cellSet = this.cellSet.filter(cell => cell.controlledBy === id)
     return this
   },
+  notControlledBy(id: string) {
+    this.cellSet = this.cellSet.filter(cell => cell.controlledBy !== id)
+    return this
+  },
   display() {
     return this.cellSet
   }
@@ -273,12 +297,16 @@ const CellSet: ICellSet = {
 
 interface IPlayerSet {
   playerSet: Player[]
+  is: (id: string) => Player | undefined
   hasNotLost: () => IPlayerSet
   display: () => Player[]
 }
 
 const PlayerSet: IPlayerSet = {
   playerSet: [],
+  is(id: string) {
+    return this.playerSet.find(player => player.id === id)
+  },
   hasNotLost() {
     this.playerSet = this.playerSet.filter(player => !player.hasLost)
     return this
@@ -287,3 +315,8 @@ const PlayerSet: IPlayerSet = {
     return this.playerSet
   }
 }
+
+const getDistance = (
+  loc1: { x: number; y: number },
+  loc2: { x: number; y: number }
+) => Math.abs(loc1.x - loc2.x) + Math.abs(loc1.y - loc2.y)

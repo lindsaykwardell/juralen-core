@@ -86,6 +86,8 @@ ${
   switch (command[0]) {
     case 'show':
       switch (command[1]) {
+        case 'analysis':
+          console.log(game.analyze())
         case 'selected':
           switch (command[2]) {
             case 'cell':
