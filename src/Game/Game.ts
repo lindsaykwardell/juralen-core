@@ -1,6 +1,15 @@
-import Scenario from '../Scenario/Scenario'
+import Scenario, { INewPlayer } from '../Scenario/Scenario'
 import Unit from '../Units/Unit'
 import Cell from '../Cell/Cell'
+import Castle from '../Cell/Structures/Castle'
+import {
+  Soldier,
+  Archer,
+  Assassin,
+  Knight,
+  Priest,
+  Wizard
+} from '../Units/Units'
 
 export default class Game {
   private scenario: Scenario
@@ -8,8 +17,8 @@ export default class Game {
   private y: number
   public selectedUnitList: string[]
 
-  constructor(playerCount: number) {
-    this.scenario = new Scenario(playerCount)
+  constructor(playerList: INewPlayer[]) {
+    this.scenario = new Scenario(playerList)
     const startingCell = this.Cells()
       .controlledBy(this.scenario.activePlayer)
       .hasStructure(['Castle'])
@@ -49,6 +58,42 @@ export default class Game {
       .filter(
         unit => unit.movesLeft > 0 && !this.selectedUnitList.includes(unit.id)
       )
+  }
+
+  public fortifyCell = () => {
+    return new Promise((resolve, reject) => {
+      if (
+        this.selectedCell().structure &&
+        this.activePlayer()!.resources.gold >=
+          this.selectedCell().structure!.fortifyCost
+      ) {
+        this.activePlayer()!.resources.gold -= this.selectedCell().structure!.fortifyCost
+        this.selectedCell().fortify()
+        resolve(
+          `${this.selectedCell().x},${
+            this.selectedCell().y
+          } has been fortified by ${this.activePlayer()!.name}`
+        )
+      } else reject('You cannot fortify this cell.')
+    })
+  }
+
+  public upgradeToCastle = () => {
+    return new Promise((resolve, reject) => {
+      if (
+        this.selectedCell().structure &&
+        this.selectedCell().structure!.name === 'Town' &&
+        this.activePlayer()!.resources.gold >= 7
+      ) {
+        this.activePlayer()!.resources.gold -= 7
+        this.selectedCell().buildStructure(Castle)
+        resolve(
+          `A castle has been built at ${this.selectedCell().x},${
+            this.selectedCell().y
+          } by ${this.activePlayer()!.name}`
+        )
+      } else reject('You cannot build a castle here.')
+    })
   }
 
   public selectAllUnits = () => {
@@ -222,7 +267,7 @@ export default class Game {
       // heal all of that player's units by one
       // (except the priest)
       if (atkUnits()[attacker].name === 'Priest') {
-        console.log(`${atkPlr} priest is healing the party...`)
+        console.log(`${atkPlr!.name}'s priest is healing the party...`)
         atkUnits().forEach((unit, index) => {
           if (index !== attacker && unit.health < unit.maxHealth) {
             unit.health++
@@ -230,7 +275,7 @@ export default class Game {
         })
       }
       if (defUnits()[defender].name === 'Priest') {
-        console.log(`${defPlr} priest is healing the party...`)
+        console.log(`${defPlr!.name} priest is healing the party...`)
         defUnits().forEach((unit, index) => {
           if (index !== defender && unit.health < unit.maxHealth) {
             unit.health++
@@ -240,17 +285,37 @@ export default class Game {
 
       // Remove defender if dead.
       if (defUnits()[defender].health <= 0) {
-        console.log(`${defPlr} ${defUnits()[defender].name} is dead!`)
+        console.log(`${defPlr!.name}'s ${defUnits()[defender].name} is dead!`)
         this.scenario.units = this.scenario.units.filter(
           unit => unit.id !== defUnits()[defender].id
         )
       }
       // Remove attacker if dead.
       if (atkUnits()[attacker].health <= 0) {
-        console.log(`${atkPlr} ${atkUnits()[attacker].name} is dead!`)
+        console.log(`${atkPlr!.name}'s ${atkUnits()[attacker].name} is dead!`)
         this.scenario.units = this.scenario.units.filter(
           unit => unit.id !== atkUnits()[attacker].id
         )
+      }
+
+      if (
+        this.Units()
+          .atLoc(x, y)
+          .display()
+          .filter(unit => unit.name !== 'Priest').length <= 0
+      ) {
+        this.Units()
+          .atLoc(x, y)
+          .controlledBy(this.activePlayer()!.id)
+          .display()
+          .forEach(unit => {
+            console.log(
+              `${this.activePlayer()!.name}'s ${
+                unit.name
+              } has surrendered and joined with ${this.getPlayer(notMe)!.name}!`
+            )
+            unit.controlledBy = notMe
+          })
       }
 
       // Switch who goes first
@@ -312,13 +377,38 @@ export default class Game {
       })
       const prevPlayer = this.activePlayer()!.id
       this.scenario.activePlayer = this.scenario.nextPlayer().id
-      this.scenario.checkObjectives(prevPlayer).catch(() => {
+      this.scenario.checkObjectives(prevPlayer).catch(result => {
+        if (result) {
+          console.log(
+            `${
+              this.scenario.players.find(player => player.id === prevPlayer)!
+                .name
+            } has won!`
+          )
+        } else {
+          console.log(
+            `${
+              this.scenario.players.find(player => player.id === prevPlayer)!
+                .name
+            } has lost!`
+          )
+        }
+      })
+      if (
+        this.scenario
+          .Players()
+          .hasNotLost()
+          .display().length === 1
+      ) {
         console.log(
           `${
-            this.scenario.players.find(player => player.id === prevPlayer)!.name
-          } has lost!`
+            this.scenario
+              .Players()
+              .hasNotLost()
+              .display()[0].name
+          } has won!`
         )
-      })
+      }
       this.gatherResources()
       resolve(`${this.activePlayer()!.name}'s turn`)
     })
@@ -328,12 +418,105 @@ export default class Game {
     const farms = this.farmsOwnedBy(this.activePlayer()!.id)
     const towns = this.townsOwnedBy(this.activePlayer()!.id)
 
-    this.activePlayer()!.resources.actions = towns
+    this.activePlayer()!.resources.actions = towns + 3
     this.activePlayer()!.resources.gold += farms
   }
 
   public analyze = () => {
     return this.activePlayer()!.ai(this.scenario)
+  }
+
+  public runComputerTurn = () => {
+    return new Promise((resolve, reject) => {
+      let prevOption = {}
+      let prevCount = 0
+      let hasFortified = false
+      const runningTurn = setInterval(() => {
+        const options = this.analyze()
+
+        let action
+        for (let i = 0; i < options.length; i++) {
+          if (options[i].action.includes('fortify') && !hasFortified) {
+            hasFortified = true
+            action = options[i]
+            break
+          } else if (!options[i].action.includes('fortify')) {
+            action = options[i]
+            break
+          }
+        }
+        if (!action) resolve()
+        // console.log(options.length > 0 ? options[0] : '')
+        if (options.length > 0 && options[0].score >= 0) {
+          if (JSON.stringify(prevOption) === JSON.stringify(options[0])) {
+            if (prevCount >= 5) {
+              clearInterval(runningTurn)
+              resolve()
+            } else {
+              prevCount++
+              this.runComputerAction(options[0])
+                .then(res => console.log(res))
+                .catch(res => console.log(res))
+            }
+          } else {
+            prevOption = options[0]
+
+            this.runComputerAction(options[0])
+              .then(res => console.log(res))
+              .catch(res => console.log(res))
+          }
+        } else {
+          clearInterval(runningTurn)
+          resolve()
+        }
+      }, 500)
+    })
+  }
+
+  runComputerAction = async s => {
+    if (s.action.includes('build')) {
+      const option = s.action.split(':')
+      this.selectCell(s.x, s.y)
+
+      const unit = () => {
+        switch (option[1]) {
+          case 'Soldier':
+            return Soldier
+          case 'Archer':
+            return Archer
+          case 'Assassin':
+            return Assassin
+          case 'Knight':
+            return Knight
+          case 'Priest':
+            return Priest
+          case 'Wizard':
+            return Wizard
+          default:
+            return Soldier
+        }
+      }
+
+      return this.buildUnit(unit())
+    }
+    if (s.action.includes('fortify')) {
+      this.selectCell(s.x, s.y)
+
+      return this.fortifyCell()
+    }
+    if (s.action.includes('upgrade')) {
+      this.selectCell(s.x, s.y)
+
+      return this.upgradeToCastle()
+    }
+    if (s.action.includes('move') || s.action.includes('attack')) {
+      this.selectCell(s.x, s.y)
+      s.id.forEach(id => {
+        this.selectUnit(id)
+      })
+
+      return this.moveSelectedUnits(s.coords.x, s.coords.y)
+    }
   }
 
   public farmsOwnedBy = (id: string) =>

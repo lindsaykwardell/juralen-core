@@ -69,15 +69,15 @@ export default (scenario: Scenario) => {
                 return 0
             }
           }
-          if (thisPlayer.resources.gold >= cost()) {
-            results.push({
-              x: cell.x,
-              y: cell.y,
-              action: 'fortify',
-              desc: 'Fortify',
-              id: []
-            })
-          }
+          // if (thisPlayer.resources.gold >= cost()) {
+          //   results.push({
+          //     x: cell.x,
+          //     y: cell.y,
+          //     action: 'fortify',
+          //     desc: 'Fortify',
+          //     id: []
+          //   })
+          // }
           if (
             cell.structure.name === 'Town' &&
             thisPlayer.resources.gold >= 7
@@ -123,7 +123,7 @@ export default (scenario: Scenario) => {
               action: thisOptimalMove.isCombat ? 'attack' : 'move',
               desc: `Move ${[...units, unit].map(unit => unit.name)}`,
               id: [...units, unit].map(unit => unit.id),
-              coords: [thisOptimalMove.x, thisOptimalMove.y]
+              coords: { x: thisOptimalMove.x, y: thisOptimalMove.y }
             })
           }
           results = [...results, ...findUnitMoves(cell, [...units, unit])]
@@ -166,12 +166,21 @@ export default (scenario: Scenario) => {
             }
           }
           if (cell.structure && cell.controlledBy !== thisPlayer.id) score += 5
+          if (
+            cell.structure &&
+            cell.controlledBy !== thisPlayer.id &&
+            scenario
+              .Units()
+              .atLoc(cell.x, cell.y)
+              .display().length <= 0
+          )
+            score += 100
           if (cell.controlledBy !== thisPlayer.id && cell.terrain! === 'Plains')
             score += 2
           if (cell.terrain! === 'Forest') score--
           if (cell.terrain! === 'Mountain') score -= 100
           if (cell.controlledBy === thisPlayer.id && distanceToEnemy > 4)
-            score -= 3
+            score -= 10
           else if (
             scenario
               .Units()
@@ -211,12 +220,19 @@ export default (scenario: Scenario) => {
             let won = 0
             let lost = 0
             for (let i = 0; i < 5; i++) {
-              if (simulateCombat(cell.x, cell.y)) won++
+              if (
+                simulateCombat(
+                  { x: cell.x, y: cell.y },
+                  { x: thisCell.x, y: thisCell.y }
+                )
+              )
+                won++
               else lost++
             }
+            // console.log('Won', won, 'Lost', lost)
             if (won > lost) {
               isCombat = true
-              score += 3
+              score += 15
             } else score -= 1000
           }
           const thisMove: IMove = {
@@ -243,24 +259,34 @@ export default (scenario: Scenario) => {
     return thisOptimalMove
   }
 
-  const simulateCombat = (x: number, y: number) => {
-    const thisCell = plainToClass(Cell, { ...scenario.Cells().atLoc(x, y) })
+  const simulateCombat = (
+    defCell: { x: number; y: number },
+    atkCell: { x: number; y: number }
+  ) => {
+    const thisCell = plainToClass(Cell, {
+      ...scenario.Cells().atLoc(defCell.x, defCell.y)
+    })
     thisCell.structure = plainToClass(Structure, { ...thisCell.structure })
 
     const notMe = scenario
       .Units()
-      .atLoc(x, y)
+      .atLoc(defCell.x, defCell.y)
       .notControlledBy(thisPlayer.id)
       .display()[0].controlledBy
 
     let atkPlr = thisPlayer
     let defPlr = scenario.Players().is(notMe)
 
-    let units = scenario
-      .Units()
-      .atLoc(x, y)
-      .display()
-      .map(unit => plainToClass(Unit, { ...unit }))
+    let units = [
+      ...scenario
+        .Units()
+        .atLoc(defCell.x, defCell.y)
+        .display(),
+      ...scenario
+        .Units()
+        .atLoc(atkCell.x, atkCell.y)
+        .display()
+    ].map(unit => plainToClass(Unit, { ...unit }))
 
     const atkUnits = () => units.filter(unit => unit.controlledBy === atkPlr.id)
     const defUnits = () =>
@@ -270,9 +296,6 @@ export default (scenario: Scenario) => {
       const attacker = Math.floor(Math.random() * atkUnits().length)
       const defender = Math.floor(Math.random() * defUnits().length)
 
-      console.log(
-        `${atkUnits()[attacker].name} is attacking ${defUnits()[defender].name}`
-      )
       // Attacker deals first damage
       // If cell has defBonus, and attacker is me, hit that first.
       // Assassins don't care about cell defBonus.
@@ -335,7 +358,11 @@ export default (scenario: Scenario) => {
       if (atkUnits()[attacker].health <= 0) {
         units = units.filter(unit => unit.id !== atkUnits()[attacker].id)
       }
-
+      if (units.filter(unit => unit.name !== 'Priest').length <= 0) {
+        units.forEach(unit => {
+          unit.controlledBy = notMe
+        })
+      }
       // Switch who goes first
       if (atkPlr === thisPlayer) {
         atkPlr = scenario.Players().is(notMe)!
@@ -359,6 +386,16 @@ export default (scenario: Scenario) => {
     }
     if (a.action.includes('build')) {
       const action = a.action.split(':')
+      if (
+        scenario
+          .Units()
+          .atLoc(a.x, a.y)
+          .display().length > 4
+      )
+        score -= scenario
+          .Units()
+          .atLoc(a.x, a.y)
+          .display().length
       const cost = () => {
         switch (action[1]) {
           case 'Soldier':
@@ -468,6 +505,7 @@ export default (scenario: Scenario) => {
       }
     }
     if (a.action.includes('move')) {
+      score += 5
       if (
         scenario
           .Cells()
@@ -548,13 +586,13 @@ export default (scenario: Scenario) => {
       }
       if (
         a.coords &&
-        scenario.Cells().atLoc(a.coords![0], a.coords![1]).structure
+        scenario.Cells().atLoc(a.coords!.x, a.coords!.y).structure
       ) {
         const distance = scenario.getDistance(
           { x: a.x, y: a.y },
-          { x: a.coords![0], y: a.coords![1] }
+          { x: a.coords!.x, y: a.coords!.y }
         )
-        const bonus = 5 - distance < 0 ? 0 : 5 - distance
+        const bonus = 15 - distance < 0 ? 0 : 15 - distance
         score += bonus
       }
     }
@@ -608,6 +646,6 @@ interface IAction {
   action: string
   desc: string
   id: string[]
-  coords?: [number, number]
+  coords?: { x: number; y: number }
   score?: number
 }

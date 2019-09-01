@@ -23,12 +23,17 @@ export default class Cell {
     this.defBonus -= damage
   }
 
+  fortify() {
+    this.defBonus++
+  }
+
   buildStructure(struct: typeof Structure) {
     if (this.structure) {
       const newStruct = new struct()
       newStruct.buildUnits = [
         ...new Set([...newStruct.buildUnits, ...this.structure.buildUnits])
       ]
+      this.structure = newStruct
     } else {
       this.structure = new struct()
     }

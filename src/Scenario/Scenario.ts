@@ -18,20 +18,20 @@ export default class Scenario {
   public objectives: IObjective[]
   public timeline: string[] = []
 
-  constructor(playerCount: number) {
+  constructor(playerList: INewPlayer[]) {
     this.x = 9
     this.y = 9
     this.grid = this.generateGrid()
     this.players = []
     this.units = []
-    for (let i = 0; i < playerCount; i++) {
+    playerList.forEach(newPlayer => {
       this.players.push(
-        new Player(`Player${i + 1}`, PlayerType.Human, {
+        new Player(newPlayer.name, newPlayer.type, {
           actions: 4,
           gold: 2
         })
       )
-    }
+    })
     this.players.forEach(player => {
       let done = false
       while (!done) {
@@ -129,8 +129,8 @@ export default class Scenario {
                 .display().length >=
               this.gridSize() / objective.value
             ) {
-              this.players.find(player => player.id === id)!.hasLost = true
-              reject()
+              this.players.find(player => player.id === id)!.hasLost = false
+              reject(true)
             }
             break
           case Objective.BelowMinTownCount:
@@ -141,7 +141,7 @@ export default class Scenario {
                 .display().length <= 0
             ) {
               this.players.find(player => player.id === id)!.hasLost = true
-              reject()
+              reject(false)
             }
             break
           default:
@@ -320,3 +320,8 @@ const getDistance = (
   loc1: { x: number; y: number },
   loc2: { x: number; y: number }
 ) => Math.abs(loc1.x - loc2.x) + Math.abs(loc1.y - loc2.y)
+
+export interface INewPlayer {
+  name: string
+  type: PlayerType
+}
