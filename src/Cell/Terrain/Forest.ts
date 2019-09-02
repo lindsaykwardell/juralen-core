@@ -1,9 +1,9 @@
-import Cell, { Terrain } from "../Cell";
+import Cell, { Terrain } from '../Cell'
 
 export default class Forest extends Cell {
   constructor(x: number, y: number) {
-    super(x, y);
+    super(x, y)
     this.terrain = Terrain.Forest
-    this.defBonus
+    this.defBonus = 1
   }
 }

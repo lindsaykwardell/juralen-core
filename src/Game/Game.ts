@@ -1,6 +1,6 @@
+import 'reflect-metadata'
 import Scenario, { INewPlayer } from '../Scenario/Scenario'
 import Unit from '../Units/Unit'
-import Cell from '../Cell/Cell'
 import Castle from '../Cell/Structures/Castle'
 import {
   Soldier,
@@ -19,7 +19,8 @@ export default class Game {
 
   constructor(playerList: INewPlayer[]) {
     this.scenario = new Scenario(playerList)
-    const startingCell = this.Cells()
+    const startingCell = this.scenario
+      .Cells()
       .controlledBy(this.scenario.activePlayer)
       .hasStructure(['Castle'])
       .get()[0]
@@ -51,7 +52,8 @@ export default class Game {
   }
 
   public selectableUnits = () => {
-    return this.Units()
+    return this.scenario
+      .Units()
       .atLoc(this.selectedCell().x, this.selectedCell().y)
       .controlledBy(this.activePlayer()!.id)
       .get()
@@ -124,7 +126,8 @@ export default class Game {
         reject(`You do not have enough gold!`)
       else if (
         this.farmsOwnedBy(this.activePlayer()!.id) <=
-        this.Units()
+        this.scenario
+          .Units()
           .controlledBy(this.activePlayer()!.id)
           .count()
       )
@@ -171,7 +174,8 @@ export default class Game {
         this.selectedUnitList = []
         this.selectCell(x, y)
         if (
-          this.Units()
+          this.scenario
+            .Units()
             .atLoc(x, y)
             .notControlledBy(this.activePlayer()!.id)
             .count() > 0
@@ -180,7 +184,8 @@ export default class Game {
         }
 
         console.log('Assigning ownership')
-        this.Cells().atLoc(x, y).controlledBy = this.Units()
+        this.scenario.Cells().atLoc(x, y).controlledBy = this.scenario
+          .Units()
           .atLoc(x, y)
           .get()[0].controlledBy
         resolve(`${this.activePlayer()!.name} has moved units to ${x},${y}`)
@@ -191,8 +196,9 @@ export default class Game {
   }
 
   public performCombat = (x: number, y: number) => {
-    const thisCell = this.Cells().atLoc(x, y)
-    const notMe = this.Units()
+    const thisCell = this.scenario.Cells().atLoc(x, y)
+    const notMe = this.scenario
+      .Units()
       .atLoc(x, y)
       .notControlledBy(this.activePlayer()!.id)
       .get()[0].controlledBy
@@ -201,12 +207,14 @@ export default class Game {
     let defPlr = this.getPlayer(notMe)
 
     const atkUnits = () =>
-      this.Units()
+      this.scenario
+        .Units()
         .atLoc(x, y)
         .controlledBy(atkPlr!.id)
         .get()
     const defUnits = () =>
-      this.Units()
+      this.scenario
+        .Units()
         .atLoc(x, y)
         .controlledBy(defPlr!.id)
         .get()
@@ -293,12 +301,14 @@ export default class Game {
       }
 
       if (
-        this.Units()
+        this.scenario
+          .Units()
           .atLoc(x, y)
           .get()
           .filter(unit => unit.name !== 'Priest').length <= 0
       ) {
-        this.Units()
+        this.scenario
+          .Units()
           .atLoc(x, y)
           .controlledBy(this.activePlayer()!.id)
           .get()
@@ -326,7 +336,7 @@ export default class Game {
   public isInRange = (x: number, y: number) => {
     return (
       this.selectedUnitList.length > 0 &&
-      this.Cells().atLoc(x, y).passable !== false &&
+      this.scenario.Cells().atLoc(x, y).passable !== false &&
       this.activePlayer()!.resources.actions >=
         this.getMoveCost() *
           this.getDistance(
@@ -357,12 +367,13 @@ export default class Game {
         .forEach(unit => {
           unit.movesLeft = unit.maxMoves
         })
-      const allPriests = this.Units()
+      const allPriests = this.scenario
+        .Units()
         .is(['Priest'])
         .get()
       allPriests.forEach(priest => {
-        console.log('Priest found in location', priest.x, priest.y)
-        const units = this.Units()
+        const units = this.scenario
+          .Units()
           .atLoc(priest.x, priest.y)
           .get()
         units.forEach(unit => {
@@ -528,7 +539,7 @@ export default class Game {
   public activePlayer = () =>
     this.scenario.Players().is(this.scenario.activePlayer)
 
-  public selectedCell = () => this.Cells().atLoc(this.x, this.y)
+  public selectedCell = () => this.scenario.Cells().atLoc(this.x, this.y)
 
   public selectedUnits = () =>
     this.scenario
@@ -542,6 +553,5 @@ export default class Game {
   ) => Math.abs(loc1.x - loc2.x) + Math.abs(loc1.y - loc2.y)
 
   public Units = () => this.scenario.Units()
-
   public Cells = () => this.scenario.Cells()
 }

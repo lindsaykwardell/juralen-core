@@ -17,7 +17,7 @@ export default class Scenario {
   public activePlayer: string
   private objectives: IObjective[]
 
-  constructor(playerList: INewPlayer[]) {
+  constructor(playerList: { name: string; type: PlayerType }[]) {
     this.x = 9
     this.y = 9
     this.grid = this.generateGrid()
@@ -187,7 +187,7 @@ enum Objective {
   BelowMinTownCount
 }
 
-interface IUnitSet {
+export interface IUnitSet {
   unitSet: Unit[]
   refresh: (val: Unit[]) => IUnitSet
   atLoc: (x: number, y: number) => IUnitSet
@@ -236,7 +236,7 @@ const UnitSet: IUnitSet = {
   }
 }
 
-interface ICellSet {
+export interface ICellSet {
   unitSet: Unit[]
   cellSet: Cell[]
   grid: Cell[][]
@@ -300,7 +300,7 @@ const CellSet: ICellSet = {
   }
 }
 
-interface IPlayerSet {
+export interface IPlayerSet {
   playerSet: Player[]
   next: (id: string) => Player
   is: (id: string) => Player | undefined

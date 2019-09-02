@@ -1,5 +1,4 @@
 import { PlayerType } from './Player/Player'
-import 'reflect-metadata'
 import inquirer from 'inquirer'
 import Game from './Game/Game'
 import readline from 'readline'

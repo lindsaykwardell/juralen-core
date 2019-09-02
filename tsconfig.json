@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es2015",
+    "target": "es5",
     "module": "commonjs",
     "outDir": "./dist",
     "strict": true,
@@ -9,7 +9,10 @@
     "noImplicitAny": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "lib": ["es2016", "esnext.asynciterable", "dom"]
+    "declaration": true,
+    "sourceMap": true,
+    "downlevelIteration": true,
+    "lib": ["es2015", "es5", "es6", "esnext.asynciterable", "dom"]
   },
-  "include": ["src"]
+  "include": ["src/**/*"]
 }
