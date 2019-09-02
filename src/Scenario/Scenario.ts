@@ -17,9 +17,12 @@ export default class Scenario {
   public activePlayer: string
   private objectives: IObjective[]
 
-  constructor(playerList: { name: string; type: PlayerType }[]) {
-    this.x = 9
-    this.y = 9
+  constructor(
+    playerList: { name: string; type: PlayerType }[],
+    grid: { x: number; y: number } = { x: 9, y: 9 }
+  ) {
+    this.x = grid.x
+    this.y = grid.y
     this.grid = this.generateGrid()
     this.players = []
     this.units = []

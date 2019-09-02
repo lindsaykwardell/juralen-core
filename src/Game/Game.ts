@@ -17,8 +17,11 @@ export default class Game {
   private y: number
   public selectedUnitList: string[]
 
-  constructor(playerList: INewPlayer[]) {
-    this.scenario = new Scenario(playerList)
+  constructor(
+    playerList: INewPlayer[],
+    grid: { x: number; y: number } = { x: 9, y: 9 }
+  ) {
+    this.scenario = new Scenario(playerList, grid)
     const startingCell = this.scenario
       .Cells()
       .controlledBy(this.scenario.activePlayer)
