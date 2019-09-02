@@ -22,7 +22,7 @@ export default class Game {
     const startingCell = this.Cells()
       .controlledBy(this.scenario.activePlayer)
       .hasStructure(['Castle'])
-      .display()[0]
+      .get()[0]
     this.x = startingCell.x
     this.y = startingCell.y
     this.selectedUnitList = []
@@ -33,11 +33,11 @@ export default class Game {
   }
 
   public grid = () => {
-    return this.scenario.grid
+    return this.scenario.Cells().grid
   }
 
   public getPlayer = (id: string) => {
-    return this.scenario.players.find(player => player.id === id)
+    return this.scenario.Players().is(id)
   }
 
   public selectCell = (x: number, y: number) => {
@@ -54,7 +54,7 @@ export default class Game {
     return this.Units()
       .atLoc(this.selectedCell().x, this.selectedCell().y)
       .controlledBy(this.activePlayer()!.id)
-      .display()
+      .get()
       .filter(
         unit => unit.movesLeft > 0 && !this.selectedUnitList.includes(unit.id)
       )
@@ -97,13 +97,11 @@ export default class Game {
   }
 
   public selectAllUnits = () => {
-    this.selectedUnitList = this.scenario.units
-      .filter(
-        unit =>
-          unit.x === this.selectedCell().x &&
-          unit.y === this.selectedCell().y &&
-          unit.controlledBy === this.scenario.activePlayer
-      )
+    this.selectedUnitList = this.scenario
+      .Units()
+      .atLoc(this.selectedCell().x, this.selectedCell().y)
+      .controlledBy(this.activePlayer()!.id)
+      .get()
       .map(unit => unit.id)
   }
 
@@ -128,11 +126,11 @@ export default class Game {
         this.farmsOwnedBy(this.activePlayer()!.id) <=
         this.Units()
           .controlledBy(this.activePlayer()!.id)
-          .display().length
+          .count()
       )
         reject(`You do not have enough farms!`)
       else {
-        this.scenario.units.push(newUnit)
+        this.scenario.addUnit(newUnit)
         this.activePlayer()!.resources.gold -= newUnit.cost
         resolve(
           `${this.activePlayer()!.name} built a ${unit.name} in ${
@@ -147,7 +145,7 @@ export default class Game {
     const inRangeCells: { x: number; y: number }[] = []
     this.scenario
       .Cells()
-      .display()
+      .get()
       .forEach(cell => {
         if (this.isInRange(cell.x, cell.y)) {
           inRangeCells.push({ x: cell.x, y: cell.y })
@@ -176,7 +174,7 @@ export default class Game {
           this.Units()
             .atLoc(x, y)
             .notControlledBy(this.activePlayer()!.id)
-            .display().length > 0
+            .count() > 0
         ) {
           this.performCombat(x, y)
         }
@@ -184,7 +182,7 @@ export default class Game {
         console.log('Assigning ownership')
         this.Cells().atLoc(x, y).controlledBy = this.Units()
           .atLoc(x, y)
-          .display()[0].controlledBy
+          .get()[0].controlledBy
         resolve(`${this.activePlayer()!.name} has moved units to ${x},${y}`)
       } else {
         reject("We can't get there.")
@@ -197,7 +195,7 @@ export default class Game {
     const notMe = this.Units()
       .atLoc(x, y)
       .notControlledBy(this.activePlayer()!.id)
-      .display()[0].controlledBy
+      .get()[0].controlledBy
 
     let atkPlr = this.activePlayer()
     let defPlr = this.getPlayer(notMe)
@@ -206,12 +204,12 @@ export default class Game {
       this.Units()
         .atLoc(x, y)
         .controlledBy(atkPlr!.id)
-        .display()
+        .get()
     const defUnits = () =>
       this.Units()
         .atLoc(x, y)
         .controlledBy(defPlr!.id)
-        .display()
+        .get()
 
     while (atkUnits().length > 0 && defUnits().length > 0) {
       const attacker = Math.floor(Math.random() * atkUnits().length)
@@ -286,28 +284,24 @@ export default class Game {
       // Remove defender if dead.
       if (defUnits()[defender].health <= 0) {
         console.log(`${defPlr!.name}'s ${defUnits()[defender].name} is dead!`)
-        this.scenario.units = this.scenario.units.filter(
-          unit => unit.id !== defUnits()[defender].id
-        )
+        this.scenario.removeUnit(defUnits()[defender])
       }
       // Remove attacker if dead.
       if (atkUnits()[attacker].health <= 0) {
         console.log(`${atkPlr!.name}'s ${atkUnits()[attacker].name} is dead!`)
-        this.scenario.units = this.scenario.units.filter(
-          unit => unit.id !== atkUnits()[attacker].id
-        )
+        this.scenario.removeUnit(atkUnits()[attacker])
       }
 
       if (
         this.Units()
           .atLoc(x, y)
-          .display()
+          .get()
           .filter(unit => unit.name !== 'Priest').length <= 0
       ) {
         this.Units()
           .atLoc(x, y)
           .controlledBy(this.activePlayer()!.id)
-          .display()
+          .get()
           .forEach(unit => {
             console.log(
               `${this.activePlayer()!.name}'s ${
@@ -357,17 +351,20 @@ export default class Game {
 
   public endTurn = () => {
     return new Promise(async (resolve, reject) => {
-      this.scenario.units.forEach(unit => {
-        unit.movesLeft = unit.maxMoves
-      })
+      this.scenario
+        .Units()
+        .get()
+        .forEach(unit => {
+          unit.movesLeft = unit.maxMoves
+        })
       const allPriests = this.Units()
         .is(['Priest'])
-        .display()
+        .get()
       allPriests.forEach(priest => {
         console.log('Priest found in location', priest.x, priest.y)
         const units = this.Units()
           .atLoc(priest.x, priest.y)
-          .display()
+          .get()
         units.forEach(unit => {
           if (unit.id !== priest.id && unit.health < unit.maxHealth) {
             console.log('Healing!')
@@ -376,21 +373,17 @@ export default class Game {
         })
       })
       const prevPlayer = this.activePlayer()!.id
-      this.scenario.activePlayer = this.scenario.nextPlayer().id
+      this.scenario.activePlayer = this.scenario
+        .Players()
+        .next(this.activePlayer()!.id).id
       this.scenario.checkObjectives(prevPlayer).catch(result => {
         if (result) {
           console.log(
-            `${
-              this.scenario.players.find(player => player.id === prevPlayer)!
-                .name
-            } has won!`
+            `${this.scenario.Players().is(prevPlayer)!.name} has won!`
           )
         } else {
           console.log(
-            `${
-              this.scenario.players.find(player => player.id === prevPlayer)!
-                .name
-            } has lost!`
+            `${this.scenario.Players().is(prevPlayer)!.name} has lost!`
           )
         }
       })
@@ -398,14 +391,14 @@ export default class Game {
         this.scenario
           .Players()
           .hasNotLost()
-          .display().length === 1
+          .count() === 1
       ) {
         console.log(
           `${
             this.scenario
               .Players()
               .hasNotLost()
-              .display()[0].name
+              .get()[0].name
           } has won!`
         )
       }
@@ -523,24 +516,25 @@ export default class Game {
     this.scenario
       .Cells()
       .controlledBy(id)
-      .display().length
+      .count()
 
   public townsOwnedBy = (id: string) =>
     this.scenario
       .Cells()
       .controlledBy(id)
       .hasStructure()
-      .display().length
+      .count()
 
   public activePlayer = () =>
-    this.scenario.players.find(
-      player => player.id === this.scenario.activePlayer
-    )
+    this.scenario.Players().is(this.scenario.activePlayer)
 
   public selectedCell = () => this.Cells().atLoc(this.x, this.y)
 
   public selectedUnits = () =>
-    this.scenario.units.filter(unit => this.selectedUnitList.includes(unit.id))
+    this.scenario
+      .Units()
+      .get()
+      .filter(unit => this.selectedUnitList.includes(unit.id))
 
   private getDistance = (
     loc1: { x: number; y: number },

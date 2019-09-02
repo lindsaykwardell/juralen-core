@@ -11,12 +11,11 @@ import { Soldier } from '../Units/Units'
 export default class Scenario {
   private x: number
   private y: number
-  public grid: Cell[][]
-  public players: Player[]
-  public units: Unit[]
+  private grid: Cell[][]
+  private players: Player[]
+  private units: Unit[]
   public activePlayer: string
-  public objectives: IObjective[]
-  public timeline: string[] = []
+  private objectives: IObjective[]
 
   constructor(playerList: INewPlayer[]) {
     this.x = 9
@@ -48,7 +47,7 @@ export default class Scenario {
         }
       }
     })
-    this.activePlayer = this.players[this.randomPlayer(this.players.length)].id
+    this.activePlayer = this.Players().random().id
     this.objectives = [
       {
         objective: Objective.BoardControl,
@@ -61,7 +60,7 @@ export default class Scenario {
     ]
   }
 
-  public generateGrid = () => {
+  private generateGrid = () => {
     const grid: Cell[][] = []
     for (let y = 0; y < this.y; y++) {
       const row: Cell[] = []
@@ -102,8 +101,19 @@ export default class Scenario {
     return UnitSet
   }
 
+  public addUnit = (newUnit: Unit) => {
+    this.units = [...this.units.map(unit => unit), newUnit]
+  }
+
+  public removeUnit = (deadUnit: Unit) => {
+    this.units = [...this.units.map(unit => unit)].filter(
+      unit => unit.id !== deadUnit.id
+    )
+  }
+
   public Cells = () => {
     CellSet.cellSet = []
+    CellSet.grid = this.grid
     CellSet.unitSet = this.units
     this.grid.forEach(row => {
       row.forEach(cell => CellSet.cellSet.push(cell))
@@ -126,7 +136,7 @@ export default class Scenario {
             if (
               this.Cells()
                 .controlledBy(id)
-                .display().length >=
+                .count() >=
               this.gridSize() / objective.value
             ) {
               this.players.find(player => player.id === id)!.hasLost = false
@@ -138,7 +148,7 @@ export default class Scenario {
               this.Cells()
                 .controlledBy(thisPlayer!.id)
                 .hasStructure()
-                .display().length <= 0
+                .count() <= 0
             ) {
               this.players.find(player => player.id === id)!.hasLost = true
               reject(false)
@@ -150,21 +160,6 @@ export default class Scenario {
       })
       resolve()
     })
-  }
-
-  public nextPlayer(): Player {
-    const activePlayers = this.Players()
-      .hasNotLost()
-      .display()
-    const key = activePlayers.findIndex(
-      player => player.id === this.activePlayer
-    )
-    if (key + 1 === activePlayers.length) return activePlayers[0]
-    else return activePlayers[key + 1]
-  }
-
-  private randomPlayer(count: number) {
-    return Math.floor(Math.random() * count)
   }
 
   private gridSize(): number {
@@ -199,8 +194,9 @@ interface IUnitSet {
   withinDistance: (val: number, cell: { x: number; y: number }) => IUnitSet
   controlledBy: (id: string) => IUnitSet
   notControlledBy: (id: string) => IUnitSet
-  display: () => Unit[]
+  get: () => Unit[]
   is: (names: string[]) => IUnitSet
+  count(): number
 }
 
 const UnitSet: IUnitSet = {
@@ -232,14 +228,18 @@ const UnitSet: IUnitSet = {
     this.unitSet = this.unitSet.filter(unit => names.includes(unit.name))
     return this
   },
-  display() {
+  get() {
     return [...this.unitSet]
+  },
+  count() {
+    return this.unitSet.length
   }
 }
 
 interface ICellSet {
   unitSet: Unit[]
   cellSet: Cell[]
+  grid: Cell[][]
   atLoc: (x: number, y: number) => Cell
   inRow: (row: number) => ICellSet
   inCol: (col: number) => ICellSet
@@ -247,12 +247,14 @@ interface ICellSet {
   hasUnit: (name?: string[]) => ICellSet
   controlledBy: (id: string) => ICellSet
   notControlledBy: (id: string) => ICellSet
-  display: () => Cell[]
+  get: () => Cell[]
+  count: () => number
 }
 
 const CellSet: ICellSet = {
   unitSet: [],
   cellSet: [],
+  grid: [],
   atLoc(x: number, y: number) {
     this.cellSet = this.cellSet.filter(cell => cell.x === x && cell.y === y)
     return this.cellSet[0]
@@ -278,7 +280,7 @@ const CellSet: ICellSet = {
       cell =>
         UnitSet.refresh(this.unitSet)
           .atLoc(cell.x, cell.y)
-          .display().length > 0 && (names ? UnitSet.is(names) : true)
+          .count() > 0 && (names ? UnitSet.is(names) : true)
     )
     return this
   },
@@ -290,20 +292,32 @@ const CellSet: ICellSet = {
     this.cellSet = this.cellSet.filter(cell => cell.controlledBy !== id)
     return this
   },
-  display() {
+  get() {
     return this.cellSet
+  },
+  count() {
+    return this.cellSet.length
   }
 }
 
 interface IPlayerSet {
   playerSet: Player[]
+  next: (id: string) => Player
   is: (id: string) => Player | undefined
   hasNotLost: () => IPlayerSet
-  display: () => Player[]
+  random: () => Player
+  get: () => Player[]
+  count: () => number
 }
 
 const PlayerSet: IPlayerSet = {
   playerSet: [],
+  next(id: string) {
+    const activePlayers = this.hasNotLost().get()
+    const key = activePlayers.findIndex(player => player.id === id)
+    if (key + 1 === activePlayers.length) return activePlayers[0]
+    else return activePlayers[key + 1]
+  },
   is(id: string) {
     return this.playerSet.find(player => player.id === id)
   },
@@ -311,8 +325,14 @@ const PlayerSet: IPlayerSet = {
     this.playerSet = this.playerSet.filter(player => !player.hasLost)
     return this
   },
-  display() {
+  random() {
+    return this.playerSet[Math.floor(Math.random() * this.count())]
+  },
+  get() {
     return this.playerSet
+  },
+  count() {
+    return this.playerSet.length
   }
 }
 

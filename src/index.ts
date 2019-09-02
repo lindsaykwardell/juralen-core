@@ -42,7 +42,7 @@ const main = async () => {
   }${game
               .Units()
               .atLoc(cell.x, cell.y)
-              .display()
+              .get()
               .map(unit => {
                 let code = ''
                 switch (unit.name.toLowerCase()) {
@@ -81,7 +81,7 @@ const main = async () => {
     const units = game
       .Units()
       .controlledBy(game.activePlayer()!.id)
-      .display().length
+      .count()
     console.log(`Actions: ${actions}
 Gold: ${gold}
 Farms: ${farms}
@@ -147,7 +147,7 @@ Units: ${units}
                       .Cells()
                       .controlledBy(game.activePlayer()!.id)
                       .hasStructure()
-                      .display()
+                      .get()
                   )
                   break
                 case 'castle':
@@ -157,7 +157,7 @@ Units: ${units}
                       .Cells()
                       .controlledBy(game.activePlayer()!.id)
                       .hasStructure([Castle.structureName])
-                      .display()
+                      .get()
                   )
                   break
                 case 'town':
@@ -167,7 +167,7 @@ Units: ${units}
                       .Cells()
                       .controlledBy(game.activePlayer()!.id)
                       .hasStructure([Town.structureName])
-                      .display()
+                      .get()
                   )
                   break
                 case 'cells':
@@ -175,7 +175,7 @@ Units: ${units}
                     game
                       .Cells()
                       .controlledBy(game.activePlayer()!.id)
-                      .display()
+                      .get()
                   )
                   break
                 case 'units':
@@ -183,7 +183,7 @@ Units: ${units}
                     game
                       .Units()
                       .controlledBy(game.activePlayer()!.id)
-                      .display()
+                      .get()
                   )
                   break
                 case 'resources':
@@ -193,7 +193,7 @@ Units: ${units}
                   const units = game
                     .Units()
                     .controlledBy(game.activePlayer()!.id)
-                    .display().length
+                    .count()
                   console.log(`Actions: ${actions}
 Gold: ${gold}
 Farms: ${farms}

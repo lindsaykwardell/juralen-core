@@ -18,7 +18,7 @@ export default (scenario: Scenario) => {
   const enemyCells = scenario
     .Cells()
     .notControlledBy(scenario.activePlayer)
-    .display()
+    .get()
 
   const analyzeMoves = () => {}
 
@@ -27,7 +27,7 @@ export default (scenario: Scenario) => {
     scenario
       .Cells()
       .controlledBy(thisPlayer.id)
-      .display()
+      .get()
       .forEach(cell => {
         if (cell.structure) {
           cell.structure.buildUnits.forEach(unit => {
@@ -102,7 +102,7 @@ export default (scenario: Scenario) => {
       .Units()
       .atLoc(cell.x, cell.y)
       .controlledBy(thisPlayer.id)
-      .display()
+      .get()
       .filter(unit => !units.find(u => u.id === unit.id))
       .forEach(unit => {
         let thisOptimalMove: any
@@ -145,7 +145,7 @@ export default (scenario: Scenario) => {
     }
     scenario
       .Cells()
-      .display()
+      .get()
       .forEach(cell => {
         const distance = scenario.getDistance(thisCell, cell)
         const moveCost = scenario.getMoveCost(units)
@@ -172,7 +172,7 @@ export default (scenario: Scenario) => {
             scenario
               .Units()
               .atLoc(cell.x, cell.y)
-              .display().length <= 0
+              .count() <= 0
           )
             score += 100
           if (cell.controlledBy !== thisPlayer.id && cell.terrain! === 'Plains')
@@ -185,24 +185,24 @@ export default (scenario: Scenario) => {
             scenario
               .Units()
               .atLoc(cell.x, cell.y)
-              .display().length <=
+              .count() <=
             scenario
               .Units()
               .notControlledBy(thisPlayer.id)
               .withinDistance(4, { x: cell.x, y: cell.y })
-              .display().length
+              .count()
           )
             score +=
               scenario
                 .Units()
                 .notControlledBy(thisPlayer.id)
                 .withinDistance(4, { x: cell.x, y: cell.y })
-                .display().length *
+                .count() *
                 units.length -
               scenario
                 .Units()
                 .atLoc(cell.x, cell.y)
-                .display().length
+                .count()
           if (
             distanceToEnemy < thisOptimalMove.distanceToEnemy &&
             cell.structure
@@ -215,7 +215,7 @@ export default (scenario: Scenario) => {
               .Units()
               .atLoc(cell.x, cell.y)
               .notControlledBy(thisPlayer.id)
-              .display().length > 0
+              .count() > 0
           ) {
             let won = 0
             let lost = 0
@@ -272,7 +272,7 @@ export default (scenario: Scenario) => {
       .Units()
       .atLoc(defCell.x, defCell.y)
       .notControlledBy(thisPlayer.id)
-      .display()[0].controlledBy
+      .get()[0].controlledBy
 
     let atkPlr = thisPlayer
     let defPlr = scenario.Players().is(notMe)
@@ -281,11 +281,11 @@ export default (scenario: Scenario) => {
       ...scenario
         .Units()
         .atLoc(defCell.x, defCell.y)
-        .display(),
+        .get(),
       ...scenario
         .Units()
         .atLoc(atkCell.x, atkCell.y)
-        .display()
+        .get()
     ].map(unit => plainToClass(Unit, { ...unit }))
 
     const atkUnits = () => units.filter(unit => unit.controlledBy === atkPlr.id)
@@ -390,12 +390,12 @@ export default (scenario: Scenario) => {
         scenario
           .Units()
           .atLoc(a.x, a.y)
-          .display().length > 4
+          .count() > 4
       )
         score -= scenario
           .Units()
           .atLoc(a.x, a.y)
-          .display().length
+          .count()
       const cost = () => {
         switch (action[1]) {
           case 'Soldier':
@@ -409,7 +409,7 @@ export default (scenario: Scenario) => {
                 .Units()
                 .atLoc(a.x, a.y)
                 .controlledBy(thisPlayer.id)
-                .display().length <= 0
+                .count() <= 0
             )
               score -= 1000
             else {
@@ -418,7 +418,7 @@ export default (scenario: Scenario) => {
                 .Units()
                 .atLoc(a.x, a.y)
                 .controlledBy(thisPlayer.id)
-                .display()
+                .get()
                 .forEach(unit => {
                   if (unit.name !== 'Priest') {
                     onlyPriests = false
@@ -446,11 +446,11 @@ export default (scenario: Scenario) => {
         scenario
           .Units()
           .controlledBy(thisPlayer.id)
-          .display().length >=
+          .count() >=
           scenario
             .Cells()
             .controlledBy(thisPlayer.id)
-            .display().length ||
+            .count() ||
         thisPlayer.resources.gold < cost()
       ) {
         score -= 1000
@@ -459,18 +459,18 @@ export default (scenario: Scenario) => {
           scenario
             .Units()
             .atLoc(a.x, a.y)
-            .display().length - 8
+            .count() - 8
         )
         if (
           scenario
             .Cells()
             .controlledBy(thisPlayer.id)
-            .display().length /
+            .count() /
             2 >=
           scenario
             .Units()
             .controlledBy(thisPlayer.id)
-            .display().length
+            .count()
         )
           score += 2
         let distanceToEnemy = 100
@@ -478,7 +478,7 @@ export default (scenario: Scenario) => {
           .Cells()
           .notControlledBy(thisPlayer.id)
           .hasUnit()
-          .display()
+          .get()
           .forEach(cell => {
             const thisDistanceToEnemy = scenario.getDistance(
               { x: a.x, y: a.y },
@@ -492,12 +492,12 @@ export default (scenario: Scenario) => {
             scenario
               .Units()
               .atLoc(a.x, a.y)
-              .display().length <=
+              .count() <=
             scenario
               .Units()
               .notControlledBy(thisPlayer.id)
               .withinDistance(4, { x: a.x, y: a.y })
-              .display().length
+              .count()
           ) {
             score += 100
           }
@@ -511,18 +511,18 @@ export default (scenario: Scenario) => {
           .Cells()
           .controlledBy(thisPlayer.id)
           .hasStructure()
-          .display().length <= 2
+          .count() <= 2
       ) {
         let demerit = 10
         if (
           scenario
             .Cells()
             .controlledBy(thisPlayer.id)
-            .display().length ===
+            .count() ===
           scenario
             .Units()
             .controlledBy(thisPlayer.id)
-            .display().length
+            .count()
         ) {
           demerit = 0
         }
@@ -533,24 +533,24 @@ export default (scenario: Scenario) => {
           scenario
             .Units()
             .atLoc(a.x, a.y)
-            .display().length
+            .count()
       }
       if (
         scenario
           .Cells()
           .controlledBy(thisPlayer.id)
-          .display().length <=
+          .count() <=
         scenario
           .Units()
           .controlledBy(thisPlayer.id)
-          .display().length
+          .count()
       )
         score += 5
       if (
         scenario
           .Units()
           .atLoc(a.x, a.y)
-          .display().length <= 2 &&
+          .count() <= 2 &&
         scenario.Cells().atLoc(a.x, a.y).structure
       ) {
         score -= 2
@@ -559,7 +559,7 @@ export default (scenario: Scenario) => {
           .Cells()
           .notControlledBy(thisPlayer.id)
           .hasUnit()
-          .display()
+          .get()
           .forEach(cell => {
             const thisDistanceToEnemy = scenario.getDistance(
               { x: a.x, y: a.y },
@@ -574,12 +574,12 @@ export default (scenario: Scenario) => {
             scenario
               .Units()
               .atLoc(a.x, a.y)
-              .display().length <=
+              .count() <=
             scenario
               .Units()
               .notControlledBy(thisPlayer.id)
               .withinDistance(4, { x: a.x, y: a.y })
-              .display().length
+              .count()
           )
             score -= 1000
         }
