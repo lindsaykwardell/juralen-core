@@ -186,7 +186,6 @@ export default class Game {
           this.performCombat(x, y)
         }
 
-        console.log('Assigning ownership')
         this.scenario.Cells().atLoc(x, y).controlledBy = this.scenario
           .Units()
           .atLoc(x, y)
