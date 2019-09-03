@@ -556,4 +556,5 @@ export default class Game {
 
   public Units = () => this.scenario.Units()
   public Cells = () => this.scenario.Cells()
+  public Players = () => this.scenario.Players()
 }
