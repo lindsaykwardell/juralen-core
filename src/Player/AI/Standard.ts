@@ -211,7 +211,7 @@ export default (scenario: Scenario) => {
           )
             score++;
           if (distanceToEnemy < 4 && thisCell.structure && scenario.Units().atLoc(thisCell.x, thisCell.y).count() - units.length <= scenario.Units().notControlledBy(thisPlayer.id).withinDistance(4, {x: thisCell.x, y: thisCell.y}).count())
-            score -= 10
+            score -= 100
           let isCombat = false;
           if (
             scenario
