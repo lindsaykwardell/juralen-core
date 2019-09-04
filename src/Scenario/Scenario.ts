@@ -7,6 +7,7 @@ import { Town, Castle } from '../Cell/Structures/Structures'
 import Player from '../Player/Player'
 import Unit from '../Units/Unit'
 import { Soldier } from '../Units/Units'
+import Fortress from '../Cell/Structures/Fortress'
 
 export default class Scenario {
   private x: number
@@ -18,7 +19,7 @@ export default class Scenario {
   private objectives: IObjective[]
 
   constructor(
-    playerList: { name: string; type: PlayerType }[],
+    playerList: { name: string; isHuman: boolean }[],
     grid: { x: number; y: number } = { x: 9, y: 9 }
   ) {
     this.x = grid.x
@@ -28,7 +29,7 @@ export default class Scenario {
     this.units = []
     playerList.forEach(newPlayer => {
       this.players.push(
-        new Player(newPlayer.name, newPlayer.type, {
+        new Player(newPlayer.name, newPlayer.isHuman, {
           actions: 4,
           gold: 2
         })
@@ -42,7 +43,7 @@ export default class Scenario {
         const cell = this.grid[y][x]
         if (!cell.structure) {
           cell.controlledBy = player.id
-          cell.buildStructure(Castle)
+          cell.buildStructure(Fortress)
           for (let i = 0; i < 3; i++) {
             this.units.push(new Soldier(cell.x, cell.y, player.id))
           }
@@ -244,6 +245,7 @@ export interface ICellSet {
   cellSet: Cell[]
   grid: Cell[][]
   atLoc: (x: number, y: number) => Cell
+  withinDistance: (val: number, cell: { x: number; y: number }) => ICellSet
   inRow: (row: number) => ICellSet
   inCol: (col: number) => ICellSet
   hasStructure: (name?: string[]) => ICellSet
@@ -261,6 +263,17 @@ const CellSet: ICellSet = {
   atLoc(x: number, y: number) {
     this.cellSet = this.cellSet.filter(cell => cell.x === x && cell.y === y)
     return this.cellSet[0]
+  },
+  withinDistance(val: number, outerCell: { x: number; y: number }) {
+    this.cellSet = this.cellSet.filter(
+      cell =>
+        val >=
+        getDistance(
+          { x: cell.x, y: cell.y },
+          { x: outerCell.x, y: outerCell.y }
+        )
+    )
+    return this
   },
   inRow(row: number) {
     this.cellSet = this.cellSet.filter(cell => cell.x === row)
@@ -346,5 +359,5 @@ const getDistance = (
 
 export interface INewPlayer {
   name: string
-  type: PlayerType
+  isHuman: boolean
 }

@@ -8,7 +8,8 @@ import {
   Assassin,
   Knight,
   Priest,
-  Wizard
+  Wizard,
+  Warrior
 } from '../Units/Units'
 
 export default class Game {
@@ -16,6 +17,7 @@ export default class Game {
   private x: number
   private y: number
   public selectedUnitList: string[]
+  public gameOver: boolean = false
 
   constructor(
     playerList: INewPlayer[],
@@ -25,7 +27,7 @@ export default class Game {
     const startingCell = this.scenario
       .Cells()
       .controlledBy(this.scenario.activePlayer)
-      .hasStructure(['Castle'])
+      .hasStructure(['Fortress'])
       .get()[0]
     this.x = startingCell.x
     this.y = startingCell.y
@@ -63,24 +65,6 @@ export default class Game {
       .filter(
         unit => unit.movesLeft > 0 && !this.selectedUnitList.includes(unit.id)
       )
-  }
-
-  public fortifyCell = () => {
-    return new Promise((resolve, reject) => {
-      if (
-        this.selectedCell().structure &&
-        this.activePlayer()!.resources.gold >=
-          this.selectedCell().structure!.fortifyCost
-      ) {
-        this.activePlayer()!.resources.gold -= this.selectedCell().structure!.fortifyCost
-        this.selectedCell().fortify()
-        resolve(
-          `${this.selectedCell().x},${
-            this.selectedCell().y
-          } has been fortified by ${this.activePlayer()!.name}`
-        )
-      } else reject('You cannot fortify this cell.')
-    })
   }
 
   public upgradeToCastle = () => {
@@ -361,8 +345,15 @@ export default class Game {
     return cost
   }
 
-  public endTurn = () => {
+  public endTurn = async () => {
     return new Promise(async (resolve, reject) => {
+      this.scenario
+        .Cells()
+        .hasStructure()
+        .get()
+        .forEach(cell => {
+          if (cell.defBonus < cell.structure!.initDefBonus) cell.defBonus++
+        })
       this.scenario
         .Units()
         .get()
@@ -389,11 +380,13 @@ export default class Game {
       this.scenario.activePlayer = this.scenario
         .Players()
         .next(this.activePlayer()!.id).id
-      this.scenario.checkObjectives(prevPlayer).catch(result => {
+      await this.scenario.checkObjectives(prevPlayer).catch(result => {
         if (result) {
           console.log(
             `${this.scenario.Players().is(prevPlayer)!.name} has won!`
           )
+          this.gameOver = true
+          reject()
         } else {
           console.log(
             `${this.scenario.Players().is(prevPlayer)!.name} has lost!`
@@ -414,6 +407,8 @@ export default class Game {
               .get()[0].name
           } has won!`
         )
+        this.gameOver = true
+        reject()
       }
       this.gatherResources()
       resolve(`${this.activePlayer()!.name}'s turn`)
@@ -436,23 +431,11 @@ export default class Game {
     return new Promise((resolve, reject) => {
       let prevOption = {}
       let prevCount = 0
-      let hasFortified = false
       const runningTurn = setInterval(() => {
         const options = this.analyze()
 
-        let action
-        for (let i = 0; i < options.length; i++) {
-          if (options[i].action.includes('fortify') && !hasFortified) {
-            hasFortified = true
-            action = options[i]
-            break
-          } else if (!options[i].action.includes('fortify')) {
-            action = options[i]
-            break
-          }
-        }
+        let action = options.length > 0 ? options[0] : null
         if (!action) resolve()
-        // console.log(options.length > 0 ? options[0] : '')
         if (options.length > 0 && options[0].score >= 0) {
           if (JSON.stringify(prevOption) === JSON.stringify(options[0])) {
             if (prevCount >= 5) {
@@ -488,6 +471,8 @@ export default class Game {
         switch (option[1]) {
           case 'Soldier':
             return Soldier
+          case 'Warrior':
+            return Warrior
           case 'Archer':
             return Archer
           case 'Assassin':
@@ -504,11 +489,6 @@ export default class Game {
       }
 
       return this.buildUnit(unit())
-    }
-    if (s.action.includes('fortify')) {
-      this.selectCell(s.x, s.y)
-
-      return this.fortifyCell()
     }
     if (s.action.includes('upgrade')) {
       this.selectCell(s.x, s.y)

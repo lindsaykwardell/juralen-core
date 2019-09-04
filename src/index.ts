@@ -1,4 +1,3 @@
-import { PlayerType } from './Player/Player'
 import inquirer from 'inquirer'
 import Game from './Game/Game'
 import readline from 'readline'
@@ -10,14 +9,14 @@ import {
   Knight,
   Assassin,
   Priest,
-  Wizard
+  Wizard,
+  Warrior
 } from './Units/Units'
 import { table } from 'table'
 import { INewPlayer } from './Scenario/Scenario'
 
 const main = async () => {
   const getCommand = async () => {
-    // console.log('\x1B[2J')
     console.log(
       table(
         game.grid().map(row =>
@@ -47,6 +46,9 @@ const main = async () => {
                 switch (unit.name.toLowerCase()) {
                   case 'soldier':
                     code = 'So'
+                    break
+                  case 'warrior':
+                    code = 'Wa'
                     break
                   case 'archer':
                     code = 'Ar'
@@ -88,7 +90,7 @@ Towns/Castles: ${towns}
 Units: ${units}
 `)
 
-    if (game.activePlayer()!.type === PlayerType.AI) {
+    if (!game.activePlayer()!.isHuman) {
       await game.runComputerTurn()
       game.endTurn()
     } else {
@@ -103,12 +105,6 @@ Units: ${units}
       )
       const command = input.toLowerCase().split(' ')
       switch (command[0]) {
-        case 'fortify':
-          await game
-            .fortifyCell()
-            .then(res => console.log(res))
-            .catch(res => console.log(res))
-          break
         case 'show':
           switch (command[1]) {
             case 'analysis':
@@ -268,6 +264,12 @@ Units: ${units}`)
                       .then(res => console.log(res))
                       .catch(res => console.log(res))
                     break
+                  case 'warrior':
+                    await game
+                      .buildUnit(Warrior)
+                      .then(res => console.log(res))
+                      .catch(res => console.log(res))
+                    break
                   case 'archer':
                     await game
                       .buildUnit(Archer)
@@ -311,7 +313,10 @@ Units: ${units}`)
             .catch(res => console.log(res))
           break
         case 'pass':
-          await game.endTurn().then(res => console.log(res))
+          await game
+            .endTurn()
+            .then(res => console.log(res))
+            .catch(() => false)
           break
         case 'exit':
           console.log('Exiting')
@@ -321,7 +326,7 @@ Units: ${units}`)
       }
     }
 
-    return getCommand()
+    return !game.gameOver ? getCommand() : null
   }
 
   let game: Game
@@ -342,23 +347,23 @@ Units: ${units}`)
       },
       {
         type: 'list',
-        name: `type`,
+        name: `isHuman`,
         message: 'Human or AI?',
         choices: [
           {
             name: 'Human',
-            value: PlayerType.Human
+            value: true
           },
           {
             name: 'AI',
-            value: PlayerType.AI
+            value: false
           }
         ]
       }
     ])
     newPlayers.push({
       name: results.name,
-      type: results.type
+      isHuman: results.isHuman
     })
   }
 

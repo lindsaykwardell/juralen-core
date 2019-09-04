@@ -7,12 +7,12 @@ export default class Player {
   public name: string
   public resources: IResources
   public hasLost: boolean
-  public type: PlayerType
+  public isHuman: boolean
   public ai: (scenario: Scenario) => any[]
 
   constructor(
     name: string,
-    type: PlayerType,
+    isHuman: boolean,
     resources: IResources,
     ai?: (scenario: Scenario) => any[]
   ) {
@@ -20,7 +20,7 @@ export default class Player {
     this.name = name
     this.resources = resources
     this.hasLost = false
-    this.type = type
+    this.isHuman = isHuman
     this.ai = ai ? ai : StandardAI
   }
 }
