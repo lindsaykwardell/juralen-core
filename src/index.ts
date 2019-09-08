@@ -213,7 +213,9 @@ Units: ${units}`)
         case 'select':
           switch (command[1]) {
             case 'cell':
+              
               const coords = command[2].split(',')
+
               game.selectCell(parseInt(coords[0], 10), parseInt(coords[1], 10))
               console.log(`Cell ${coords} selected.`)
               break
@@ -221,16 +223,18 @@ Units: ${units}`)
               if (game.selectableUnits().length > 0) {
                 const toSelect = await inquirer.prompt([
                   {
-                    type: 'list',
+                    type: 'checkbox',
                     name: 'selectUnit',
-                    message: 'Select a unit',
+                    message: 'Select units',
                     choices: game.selectableUnits().map(unit => ({
                       name: `${unit.name} (ATK: ${unit.attack} | HP: ${unit.health} | Moves: ${unit.movesLeft})`,
                       value: unit.id
                     }))
                   }
                 ])
-                game.selectUnit(toSelect.selectUnit)
+                toSelect.selectUnit.forEach(id => {
+                  game.selectUnit(id)
+                })
               } else {
                 console.log('No units available to select!')
               }
