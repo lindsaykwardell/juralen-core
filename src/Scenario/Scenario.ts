@@ -7,7 +7,7 @@ import { Town, Castle } from '../Cell/Structures/Structures'
 import Player from '../Player/Player'
 import Unit from '../Units/Unit'
 import { Soldier } from '../Units/Units'
-import Fortress from '../Cell/Structures/Fortress'
+import Citadel from '../Cell/Structures/Citadel'
 
 export default class Scenario {
   private x: number
@@ -19,7 +19,7 @@ export default class Scenario {
   private objectives: IObjective[]
 
   constructor(
-    playerList: { name: string; isHuman: boolean }[],
+    playerList: { name: string; isHuman: boolean; color: string }[],
     grid: { x: number; y: number } = { x: 9, y: 9 }
   ) {
     this.x = grid.x
@@ -29,10 +29,15 @@ export default class Scenario {
     this.units = []
     playerList.forEach(newPlayer => {
       this.players.push(
-        new Player(newPlayer.name, newPlayer.isHuman, {
-          actions: 4,
-          gold: 2
-        })
+        new Player(
+          newPlayer.name,
+          newPlayer.isHuman,
+          {
+            actions: 4,
+            gold: 2
+          },
+          newPlayer.color
+        )
       )
     })
     this.players.forEach(player => {
@@ -43,7 +48,7 @@ export default class Scenario {
         const cell = this.grid[y][x]
         if (!cell.structure) {
           cell.controlledBy = player.id
-          cell.buildStructure(Fortress)
+          cell.buildStructure(Citadel)
           for (let i = 0; i < 3; i++) {
             this.units.push(new Soldier(cell.x, cell.y, player.id))
           }
@@ -356,8 +361,3 @@ const getDistance = (
   loc1: { x: number; y: number },
   loc2: { x: number; y: number }
 ) => Math.abs(loc1.x - loc2.x) + Math.abs(loc1.y - loc2.y)
-
-export interface INewPlayer {
-  name: string
-  isHuman: boolean
-}

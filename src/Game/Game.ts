@@ -1,16 +1,21 @@
 import 'reflect-metadata'
-import Scenario, { INewPlayer } from '../Scenario/Scenario'
+import Scenario from '../Scenario/Scenario'
 import Unit from '../Units/Unit'
 import Castle from '../Cell/Structures/Castle'
 import {
   Soldier,
   Archer,
-  Assassin,
+  Rogue,
   Knight,
   Priest,
   Wizard,
   Warrior
 } from '../Units/Units'
+import Structure from '../Cell/Structures/Structure'
+import Academy from '../Cell/Structures/Academy'
+import Temple from '../Cell/Structures/Temple'
+import City from '../Cell/Structures/City'
+import Lodge from '../Cell/Structures/Lodge'
 
 export default class Game {
   private scenario: Scenario
@@ -20,14 +25,14 @@ export default class Game {
   public gameOver: boolean = false
 
   constructor(
-    playerList: INewPlayer[],
+    playerList: { name: string; isHuman: boolean; color: string }[],
     grid: { x: number; y: number } = { x: 9, y: 9 }
   ) {
     this.scenario = new Scenario(playerList, grid)
     const startingCell = this.scenario
       .Cells()
       .controlledBy(this.scenario.activePlayer)
-      .hasStructure(['Fortress'])
+      .hasStructure(['Citadel'])
       .get()[0]
     this.x = startingCell.x
     this.y = startingCell.y
@@ -67,7 +72,7 @@ export default class Game {
       )
   }
 
-  public upgradeToCastle = () => {
+  public upgradeTo = (struct: typeof Structure) => {
     return new Promise((resolve, reject) => {
       if (
         this.selectedCell().structure &&
@@ -75,13 +80,13 @@ export default class Game {
         this.activePlayer()!.resources.gold >= 7
       ) {
         this.activePlayer()!.resources.gold -= 7
-        this.selectedCell().buildStructure(Castle)
+        this.selectedCell().buildStructure(struct)
         resolve(
-          `A castle has been built at ${this.selectedCell().x},${
-            this.selectedCell().y
-          } by ${this.activePlayer()!.name}`
+          `A ${struct.structureName} has been built at ${
+            this.selectedCell().x
+          },${this.selectedCell().y} by ${this.activePlayer()!.name}`
         )
-      } else reject('You cannot build a castle here.')
+      } else reject('You cannot build a ${struct.structureName} here.')
     })
   }
 
@@ -214,13 +219,13 @@ export default class Game {
       )
       // Attacker deals first damage
       // If cell has defBonus, and attacker is me, hit that first.
-      // Assassins don't care about cell defBonus.
+      // Rogues don't care about cell defBonus.
       // Priests don't attack
       if (atkUnits()[attacker].name !== 'Priest') {
         if (
           thisCell.defBonus > 0 &&
           atkPlr!.id === this.activePlayer()!.id &&
-          atkUnits()[attacker].name !== 'Assassin'
+          atkUnits()[attacker].name !== 'Rogue'
         ) {
           thisCell.takeDamage(atkUnits()[attacker].attack)
           console.log(`Defense bonus reduced to ${thisCell.defBonus}`)
@@ -243,11 +248,11 @@ export default class Game {
           }`
         )
         // If structure has health, and defender is me, hit that first.
-        // Assassins don't care about structure health.
+        // Rogues don't care about structure health.
         if (
           thisCell.defBonus > 0 &&
           defPlr!.id === this.activePlayer()!.id &&
-          defUnits()[defender].name !== 'Assassin'
+          defUnits()[defender].name !== 'Rogue'
         ) {
           thisCell.defBonus -= defUnits()[defender].attack
           console.log(`Defense bonus reduced to ${thisCell.defBonus}`)
@@ -475,8 +480,8 @@ export default class Game {
             return Warrior
           case 'Archer':
             return Archer
-          case 'Assassin':
-            return Assassin
+          case 'Rogue':
+            return Rogue
           case 'Knight':
             return Knight
           case 'Priest':
@@ -491,9 +496,21 @@ export default class Game {
       return this.buildUnit(unit())
     }
     if (s.action.includes('upgrade')) {
+      const option = s.action.split(':')
       this.selectCell(s.x, s.y)
 
-      return this.upgradeToCastle()
+      switch (option[1].toLowerCase()) {
+        case 'castle':
+          return this.upgradeTo(Castle)
+        case 'academy':
+          return this.upgradeTo(Academy)
+        case 'temple':
+          return this.upgradeTo(Temple)
+        case 'city':
+          return this.upgradeTo(City)
+        case 'lodge':
+          return this.upgradeTo(Lodge)
+      }
     }
     if (s.action.includes('move') || s.action.includes('attack')) {
       this.selectCell(s.x, s.y)

@@ -9,11 +9,13 @@ export default class Player {
   public hasLost: boolean
   public isHuman: boolean
   public ai: (scenario: Scenario) => any[]
+  public color: string
 
   constructor(
     name: string,
     isHuman: boolean,
     resources: IResources,
+    color: string,
     ai?: (scenario: Scenario) => any[]
   ) {
     this.id = uuid()
@@ -22,6 +24,7 @@ export default class Player {
     this.hasLost = false
     this.isHuman = isHuman
     this.ai = ai ? ai : StandardAI
+    this.color = color
   }
 }
 

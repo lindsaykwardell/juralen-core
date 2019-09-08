@@ -3,16 +3,16 @@
   "extends": ["tslint:recommended"],
   "jsRules": {},
   "rules": {
-    "quotemark": [true, "double"],
+    "quotemark": [true, "single"],
     "trailing-comma": false,
     "arrow-parens": [false],
     "no-shadowed-variable": [false],
     "object-literal-key-quotes": [false],
     "curly": [false],
-    "semicolon": [true]
+    "semicolon": [false]
   },
   "rulesDirectory": [],
   "linterOptions": {
-    "exclude": ["src/express-http-proxy/*/**", "src/express-http-proxy/*"]
+    "exclude": ["node_modules/*"]
   }
 }

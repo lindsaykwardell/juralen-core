@@ -7,7 +7,7 @@ import Structure from '../../Cell/Structures/Structure'
 import {
   Soldier,
   Archer,
-  Assassin,
+  Rogue,
   Knight,
   Wizard,
   Priest,
@@ -40,7 +40,7 @@ export default (scenario: Scenario) => {
                   return 3
                 case Priest:
                   return 4
-                case Assassin:
+                case Rogue:
                   return 5
                 case Knight:
                   return 6
@@ -64,6 +64,52 @@ export default (scenario: Scenario) => {
             cell.structure.name === 'Town' &&
             thisPlayer.resources.gold >= 7
           ) {
+            const roll = Math.floor(Math.random() * 51)
+            if (roll >= 0 && roll <= 10) {
+              results.push({
+                x: cell.x,
+                y: cell.y,
+                action: 'upgrade:Lodge',
+                desc: 'Upgrade to Lodge',
+                id: []
+              })
+            }
+            if (roll > 10 && roll <= 20) {
+              results.push({
+                x: cell.x,
+                y: cell.y,
+                action: 'upgrade:City',
+                desc: 'Upgrade to City',
+                id: []
+              })
+            }
+            if (roll > 20 && roll <= 30) {
+              results.push({
+                x: cell.x,
+                y: cell.y,
+                action: 'upgrade:Castle',
+                desc: 'Upgrade to Castle',
+                id: []
+              })
+            }
+            if (roll > 30 && roll <= 40) {
+              results.push({
+                x: cell.x,
+                y: cell.y,
+                action: 'upgrade:Academy',
+                desc: 'Upgrade to Academy',
+                id: []
+              })
+            }
+            if (roll > 40 && roll <= 50) {
+              results.push({
+                x: cell.x,
+                y: cell.y,
+                action: 'upgrade:Temple',
+                desc: 'Upgrade to Temple',
+                id: []
+              })
+            }
             results.push({
               x: cell.x,
               y: cell.y,
@@ -216,13 +262,13 @@ export default (scenario: Scenario) => {
 
       // Attacker deals first damage
       // If cell has defBonus, and attacker is me, hit that first.
-      // Assassins don't care about cell defBonus.
+      // Rogues don't care about cell defBonus.
       // Priests don't attack
       if (atkUnits()[attacker].name !== 'Priest') {
         if (
           thisCell.defBonus > 0 &&
           atkPlr!.id === thisPlayer.id &&
-          atkUnits()[attacker].name !== 'Assassin'
+          atkUnits()[attacker].name !== 'Rogue'
         ) {
           thisCell.takeDamage(atkUnits()[attacker].attack)
         } // Otherwise, hit the unit.
@@ -239,11 +285,11 @@ export default (scenario: Scenario) => {
         defUnits()[defender].range >= atkUnits()[attacker].range
       ) {
         // If structure has health, and defender is me, hit that first.
-        // Assassins don't care about structure health.
+        // Rogues don't care about structure health.
         if (
           thisCell.defBonus > 0 &&
           defPlr!.id === thisPlayer.id &&
-          defUnits()[defender].name !== 'Assassin'
+          defUnits()[defender].name !== 'Rogue'
         ) {
           thisCell.defBonus -= defUnits()[defender].attack
         } else {
@@ -353,7 +399,7 @@ export default (scenario: Scenario) => {
               else score++
             }
             return 4
-          case 'Assassin':
+          case 'Rogue':
             score += 2
             return 5
           case 'Knight':

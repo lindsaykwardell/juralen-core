@@ -7,13 +7,16 @@ import {
   Soldier,
   Archer,
   Knight,
-  Assassin,
+  Rogue,
   Priest,
   Wizard,
   Warrior
 } from './Units/Units'
 import { table } from 'table'
-import { INewPlayer } from './Scenario/Scenario'
+import Academy from './Cell/Structures/Academy'
+import Lodge from './Cell/Structures/Lodge'
+import Temple from './Cell/Structures/Temple'
+import City from './Cell/Structures/City'
 
 const main = async () => {
   const getCommand = async () => {
@@ -56,8 +59,8 @@ const main = async () => {
                   case 'knight':
                     code = 'Kn'
                     break
-                  case 'assassin':
-                    code = 'As'
+                  case 'rogue':
+                    code = 'Ro'
                     break
                   case 'priest':
                     code = 'Pr'
@@ -237,7 +240,31 @@ Units: ${units}`)
           switch (command[1]) {
             case 'castle':
               await game
-                .upgradeToCastle()
+                .upgradeTo(Castle)
+                .then(res => console.log(res))
+                .catch(res => console.log(res))
+              break
+            case 'academy':
+              await game
+                .upgradeTo(Academy)
+                .then(res => console.log(res))
+                .catch(res => console.log(res))
+              break
+            case 'lodge':
+              await game
+                .upgradeTo(Lodge)
+                .then(res => console.log(res))
+                .catch(res => console.log(res))
+              break
+            case 'temple':
+              await game
+                .upgradeTo(Temple)
+                .then(res => console.log(res))
+                .catch(res => console.log(res))
+              break
+            case 'city':
+              await game
+                .upgradeTo(City)
                 .then(res => console.log(res))
                 .catch(res => console.log(res))
               break
@@ -282,9 +309,9 @@ Units: ${units}`)
                       .then(res => console.log(res))
                       .catch(res => console.log(res))
                     break
-                  case 'assassin':
+                  case 'rogue':
                     await game
-                      .buildUnit(Assassin)
+                      .buildUnit(Rogue)
                       .then(res => console.log(res))
                       .catch(res => console.log(res))
                     break
@@ -336,7 +363,7 @@ Units: ${units}`)
     if (parseInt(input, 10) !== NaN) playerCount = parseInt(input, 10)
     else console.log('Invalid input!')
   }
-  const newPlayers: INewPlayer[] = []
+  const newPlayers: { name: string; isHuman: boolean; color: string }[] = []
   for (let i = 0; i < playerCount; i++) {
     const results = await inquirer.prompt([
       {
@@ -363,7 +390,8 @@ Units: ${units}`)
     ])
     newPlayers.push({
       name: results.name,
-      isHuman: results.isHuman
+      isHuman: results.isHuman,
+      color: '#FFFFFF'
     })
   }
 

@@ -12,15 +12,17 @@
   "license": "MIT",
   "devDependencies": {
     "@types/inquirer": "^6.5.0",
+    "@types/randomcolor": "^0.5.3",
+    "@types/table": "^4.0.6",
     "@types/uuid": "^3.4.5",
     "ts-node": "^8.3.0",
     "tslint": "^5.19.0",
-    "typescript": "^3.6.2",
-    "@types/table": "^4.0.6"
+    "typescript": "^3.6.2"
   },
   "dependencies": {
     "class-transformer": "^0.2.3",
     "inquirer": "^7.0.0",
+    "randomcolor": "^0.5.4",
     "reflect-metadata": "^0.1.13",
     "table": "^5.4.6",
     "uuid": "^3.3.3"
