@@ -47,6 +47,10 @@ export default class Game {
     return this.scenario.Cells().grid
   }
 
+  public scorecard = () => {
+    return this.scenario.checkScores()
+  }
+
   public getPlayer = (id: string) => {
     return this.scenario.Players().is(id)
   }

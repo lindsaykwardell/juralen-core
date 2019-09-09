@@ -8,6 +8,7 @@ import Player from '../Player/Player'
 import Unit from '../Units/Unit'
 import { Soldier } from '../Units/Units'
 import Citadel from '../Cell/Structures/Citadel'
+import naturalOrder from 'natural-order'
 
 export default class Scenario {
   private x: number
@@ -134,6 +135,45 @@ export default class Scenario {
   public Players = () => {
     PlayerSet.playerSet = this.players
     return PlayerSet
+  }
+
+  public firstPlace = () => {
+    return this.checkScores()[0]
+  }
+
+  public lastPlace = () => {
+    return this.checkScores().pop()
+  }
+
+  public checkScores = (): { id: string; name: string; score: number }[] => {
+    const scorecard: { id: string; name: string; score: number }[] = []
+
+    this.Players()
+      .hasNotLost()
+      .get()
+      .forEach(player => {
+        let score = player.resources.gold
+
+        score += this.Cells()
+          .controlledBy(player.id)
+          .count()
+        score += this.Cells()
+          .controlledBy(player.id)
+          .hasStructure()
+          .count()
+        score +=
+          this.Cells()
+            .controlledBy(player.id)
+            .hasStructure(['Citadel'])
+            .count() * 2
+        score += this.Units()
+          .controlledBy(player.id)
+          .count()
+
+        scorecard.push({ id: player.id, name: player.name, score })
+      })
+
+    return naturalOrder(scorecard, ['score'], 'desc')
   }
 
   public checkObjectives = (id: string) => {

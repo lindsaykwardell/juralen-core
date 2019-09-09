@@ -17,14 +17,20 @@ import Academy from './Cell/Structures/Academy'
 import Lodge from './Cell/Structures/Lodge'
 import Temple from './Cell/Structures/Temple'
 import City from './Cell/Structures/City'
+import randomcolor from 'randomcolor'
+import chalk from 'chalk'
 
 const main = async () => {
   const getCommand = async () => {
     console.log(
       table(
         game.grid().map(row =>
-          row.map(
-            cell => `${
+          row.map(cell =>
+            chalk.hex(
+              cell.controlledBy
+                ? game.Players().is(cell.controlledBy)!.color
+                : '#FFFFFF'
+            )(`${
               cell.controlledBy
                 ? `*** ${game.getPlayer(cell.controlledBy)!.name} ***
   
@@ -72,7 +78,7 @@ const main = async () => {
                 return game.selectedUnitList.includes(unit.id)
                   ? `[${code}]`
                   : code
-              })}`
+              })}`)
           )
         )
       )
@@ -93,6 +99,11 @@ Towns/Castles: ${towns}
 Units: ${units}
 `)
 
+    console.log(
+      `You are in position ${game
+        .scorecard()
+        .findIndex(score => score.id === game.activePlayer()!.id) + 1}`
+    )
     if (!game.activePlayer()!.isHuman) {
       await game.runComputerTurn()
       game.endTurn()
@@ -111,7 +122,12 @@ Units: ${units}
         case 'show':
           switch (command[1]) {
             case 'analysis':
-              console.log(game.analyze())
+              console.log(game.analyze()[0])
+              break
+            case 'score':
+            case 'scores':
+              console.log(game.scorecard())
+              break
             case 'selected':
               switch (command[2]) {
                 case 'cell':
@@ -213,7 +229,6 @@ Units: ${units}`)
         case 'select':
           switch (command[1]) {
             case 'cell':
-              
               const coords = command[2].split(',')
 
               game.selectCell(parseInt(coords[0], 10), parseInt(coords[1], 10))
@@ -362,7 +377,11 @@ Units: ${units}`)
 
   let game: Game
   let playerCount = 0
-  while (playerCount <= 0) {
+  let size = 0
+  while (playerCount <= 0 && size <= 0) {
+    const sizeInput = await askQuestion('Game size? ')
+    if (parseInt(sizeInput, 10) !== NaN) size = parseInt(sizeInput, 10)
+    else console.log('Invalid input!')
     const input = await askQuestion('How many players? ')
     if (parseInt(input, 10) !== NaN) playerCount = parseInt(input, 10)
     else console.log('Invalid input!')
@@ -395,11 +414,11 @@ Units: ${units}`)
     newPlayers.push({
       name: results.name,
       isHuman: results.isHuman,
-      color: '#FFFFFF'
+      color: randomcolor()
     })
   }
 
-  game = new Game(newPlayers)
+  game = new Game(newPlayers, { x: size, y: size })
   getCommand()
 }
 

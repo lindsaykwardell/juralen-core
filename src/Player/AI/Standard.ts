@@ -350,6 +350,14 @@ export default (scenario: Scenario) => {
         )
       if (scenario.Cells().atLoc(a.coords!.y, a.coords!.y).structure)
         score += 100
+      // Give precedence to attacking the current leader or the weakest opponent.
+      if (
+        scenario.Cells().atLoc(a.coords!.y, a.coords!.y).controlledBy ===
+          scenario.firstPlace().id ||
+        scenario.Cells().atLoc(a.coords!.y, a.coords!.y).controlledBy ===
+          scenario.lastPlace()!.id
+      )
+        score += 15
     }
     if (a.action.includes('build')) {
       const action = a.action.split(':')
@@ -543,6 +551,15 @@ export default (scenario: Scenario) => {
           .count() <= 0
       )
         score += 100
+
+      // Give precedence to attacking the current leader or the weakest opponent.
+      if (
+        scenario.Cells().atLoc(a.coords!.y, a.coords!.y).controlledBy ===
+          scenario.firstPlace().id ||
+        scenario.Cells().atLoc(a.coords!.y, a.coords!.y).controlledBy ===
+          scenario.lastPlace()!.id
+      )
+        score += 15
     }
     return score
   }
