@@ -74,7 +74,7 @@ ${
     console.log(
       table(
         game
-          .grid()
+          .grid
           .map(row =>
             row.map(cell =>
               game.selectedCell().x === cell.x &&

@@ -17,6 +17,7 @@ import Academy from '../Cell/Structures/Academy'
 import Temple from '../Cell/Structures/Temple'
 import City from '../Cell/Structures/City'
 import Lodge from '../Cell/Structures/Lodge'
+import Cell from '../Cell/Cell'
 
 export default class Game {
   private scenario: Scenario
@@ -24,6 +25,8 @@ export default class Game {
   private y: number
   public selectedUnitList: string[]
   public gameOver: boolean = false
+  public grid: Cell[][]
+  public units: Unit[]
 
   constructor(
     playerList: { name: string; isHuman: boolean; color: string }[],
@@ -38,14 +41,12 @@ export default class Game {
     this.x = startingCell.x
     this.y = startingCell.y
     this.selectedUnitList = []
+    this.grid = this.scenario.grid
+    this.units = this.scenario.units
 
     console.log('The Game has begun!')
     console.log(`${this.activePlayer()!.name} will begin.`)
     console.log(' ')
-  }
-
-  public grid = () => {
-    return this.scenario.Cells().grid
   }
 
   public scorecard = () => {

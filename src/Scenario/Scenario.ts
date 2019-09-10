@@ -14,9 +14,9 @@ import Structure from '../Cell/Structures/Structure'
 export default class Scenario {
   private x: number
   private y: number
-  private grid: Cell[][]
+  public grid: Cell[][]
   private players: Player[]
-  private units: Unit[]
+  public units: Unit[]
   public activePlayer: string
   private objectives: IObjective[]
 
