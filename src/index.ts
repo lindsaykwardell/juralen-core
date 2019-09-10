@@ -19,68 +19,80 @@ import Temple from './Cell/Structures/Temple'
 import City from './Cell/Structures/City'
 import randomcolor from 'randomcolor'
 import chalk from 'chalk'
+import Cell from './Cell/Cell'
+import fs from 'fs'
+import os from 'os'
+
+const homedir = os.homedir()
 
 const main = async () => {
+  const renderCell = (cell: Cell) => `${
+    cell.controlledBy
+      ? `*** ${game.getPlayer(cell.controlledBy)!.name} ***
+
+`
+      : ''
+  }${game.isInRange(cell.x, cell.y) ? `## ${cell.terrain} ##` : cell.terrain}
+${
+  cell.structure
+    ? `${cell.structure.name}
+`
+    : ''
+}${game
+    .Units()
+    .atLoc(cell.x, cell.y)
+    .get()
+    .map(unit => {
+      let code = ''
+      switch (unit.name.toLowerCase()) {
+        case 'soldier':
+          code = 'So'
+          break
+        case 'warrior':
+          code = 'Wa'
+          break
+        case 'archer':
+          code = 'Ar'
+          break
+        case 'knight':
+          code = 'Kn'
+          break
+        case 'rogue':
+          code = 'Ro'
+          break
+        case 'priest':
+          code = 'Pr'
+          break
+        case 'wizard':
+          code = 'Wi'
+          break
+      }
+      return game.selectedUnitList.includes(unit.id) ? `[${code}]` : code
+    })}`
+
   const getCommand = async () => {
     console.log(
       table(
-        game.grid().map(row =>
-          row.map(cell =>
-            chalk.hex(
-              cell.controlledBy
-                ? game.Players().is(cell.controlledBy)!.color
-                : '#FFFFFF'
-            )(`${
-              cell.controlledBy
-                ? `*** ${game.getPlayer(cell.controlledBy)!.name} ***
-  
-  `
-                : ''
-            }${
-              game.isInRange(cell.x, cell.y)
-                ? `## ${cell.terrain} ##`
-                : cell.terrain
-            }
-  ${
-    cell.structure
-      ? `${cell.structure.name}
-  `
-      : ''
-  }${game
-              .Units()
-              .atLoc(cell.x, cell.y)
-              .get()
-              .map(unit => {
-                let code = ''
-                switch (unit.name.toLowerCase()) {
-                  case 'soldier':
-                    code = 'So'
-                    break
-                  case 'warrior':
-                    code = 'Wa'
-                    break
-                  case 'archer':
-                    code = 'Ar'
-                    break
-                  case 'knight':
-                    code = 'Kn'
-                    break
-                  case 'rogue':
-                    code = 'Ro'
-                    break
-                  case 'priest':
-                    code = 'Pr'
-                    break
-                  case 'wizard':
-                    code = 'Wi'
-                    break
-                }
-                return game.selectedUnitList.includes(unit.id)
-                  ? `[${code}]`
-                  : code
-              })}`)
+        game
+          .grid()
+          .map(row =>
+            row.map(cell =>
+              game.selectedCell().x === cell.x &&
+              game.selectedCell().y === cell.y
+                ? chalk
+                    .hex(
+                      cell.controlledBy
+                        ? game.Players().is(cell.controlledBy)!.color
+                        : '#FFFFFF'
+                    )
+                    .inverse(renderCell(cell))
+                : chalk.hex(
+                    cell.controlledBy
+                      ? game.Players().is(cell.controlledBy)!.color
+                      : '#FFFFFF'
+                  )(renderCell(cell))
+            )
           )
-        )
       )
     )
     console.log('')
@@ -106,7 +118,7 @@ Units: ${units}
     )
     if (!game.activePlayer()!.isHuman) {
       await game.runComputerTurn()
-      game.endTurn()
+      await game.endTurn()
     } else {
       const input: string = await askQuestion(
         `${game.activePlayer()!.name} @ [${game.selectedCell().x},${
@@ -303,50 +315,10 @@ Units: ${units}`)
                     choices: game.selectedCell().structure!.buildUnits
                   }
                 ])
-                switch (toBuild.selectUnit.toLowerCase()) {
-                  case 'soldier':
-                    await game
-                      .buildUnit(Soldier)
-                      .then(res => console.log(res))
-                      .catch(res => console.log(res))
-                    break
-                  case 'warrior':
-                    await game
-                      .buildUnit(Warrior)
-                      .then(res => console.log(res))
-                      .catch(res => console.log(res))
-                    break
-                  case 'archer':
-                    await game
-                      .buildUnit(Archer)
-                      .then(res => console.log(res))
-                      .catch(res => console.log(res))
-                    break
-                  case 'knight':
-                    await game
-                      .buildUnit(Knight)
-                      .then(res => console.log(res))
-                      .catch(res => console.log(res))
-                    break
-                  case 'rogue':
-                    await game
-                      .buildUnit(Rogue)
-                      .then(res => console.log(res))
-                      .catch(res => console.log(res))
-                    break
-                  case 'priest':
-                    await game
-                      .buildUnit(Priest)
-                      .then(res => console.log(res))
-                      .catch(res => console.log(res))
-                    break
-                  case 'wizard':
-                    await game
-                      .buildUnit(Wizard)
-                      .then(res => console.log(res))
-                      .catch(res => console.log(res))
-                    break
-                }
+                await game
+                  .buildUnit(toBuild.selectUnit.toLowerCase())
+                  .then(res => console.log(res))
+                  .catch(res => console.log(res))
               }
               break
           }
@@ -363,6 +335,38 @@ Units: ${units}`)
             .endTurn()
             .then(res => console.log(res))
             .catch(() => false)
+          break
+        case 'save':
+          const fileName = await askQuestion(
+            'What do you want to name this game? '
+          )
+          if (!fs.existsSync(`${homedir}/.juralen`))
+            fs.mkdirSync(`${homedir}/.juralen`)
+          fs.writeFileSync(
+            `${homedir}/.juralen/${fileName}.json`,
+            game.export()
+          )
+          console.log(`${fileName} saved!`)
+          break
+        case 'load':
+          const files = fs.readdirSync(`${homedir}/.juralen`)
+          const selected = await inquirer.prompt([
+            {
+              type: 'list',
+              name: 'selectFile',
+              message: 'Select a file to load',
+              choices: files.map(file => file.replace('.json', ''))
+            }
+          ])
+          if (
+            fs.existsSync(`${homedir}/.juralen/${selected.selectFile}.json`)
+          ) {
+            const jsonBuffer = fs.readFileSync(
+              `${homedir}/.juralen/${selected.selectFile}.json`,
+              'utf-8'
+            )
+            game.import(jsonBuffer.toString())
+          } else console.log('File does not exist!')
           break
         case 'exit':
           console.log('Exiting')

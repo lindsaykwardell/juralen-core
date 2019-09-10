@@ -31,20 +31,20 @@ export default (scenario: Scenario) => {
         if (cell.structure) {
           cell.structure.buildUnits.forEach(unit => {
             const cost = () => {
-              switch (unit) {
-                case Soldier:
+              switch (unit.toLowerCase()) {
+                case "soldier":
                   return 1
-                case Warrior:
+                case "warrior":
                   return 2
-                case Archer:
+                case "archer":
                   return 3
-                case Priest:
+                case "priest":
                   return 4
-                case Rogue:
+                case "rogue":
                   return 5
-                case Knight:
+                case "knight":
                   return 6
-                case Wizard:
+                case "wizard":
                   return 7
                 default:
                   return 0
@@ -54,8 +54,8 @@ export default (scenario: Scenario) => {
               results.push({
                 x: cell.x,
                 y: cell.y,
-                action: `build:${unit.name}`,
-                desc: `Build ${unit.name}`,
+                action: `build:${unit}`,
+                desc: `Build ${unit}`,
                 id: []
               })
             }

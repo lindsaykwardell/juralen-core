@@ -5,7 +5,7 @@ export default class Castle extends Structure {
   constructor() {
     super()
     this.name = 'Castle'
-    this.buildUnits = [Soldier, Knight]
+    this.buildUnits = ["Soldier", "Knight"]
     this.initDefBonus = 5
   }
 

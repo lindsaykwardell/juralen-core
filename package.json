@@ -12,6 +12,7 @@
   "license": "MIT",
   "devDependencies": {
     "@types/inquirer": "^6.5.0",
+    "@types/node-emoji": "^1.8.1",
     "@types/randomcolor": "^0.5.3",
     "@types/table": "^4.0.6",
     "@types/uuid": "^3.4.5",
@@ -24,6 +25,7 @@
     "class-transformer": "^0.2.3",
     "inquirer": "^7.0.0",
     "natural-order": "^0.2.3",
+    "node-emoji": "^1.10.0",
     "randomcolor": "^0.5.4",
     "reflect-metadata": "^0.1.13",
     "table": "^5.4.6",

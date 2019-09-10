@@ -1,14 +1,15 @@
-import { PlayerType } from './../Player/Player'
 import Cell from '../Cell/Cell'
 import Plains from '../Cell/Terrain/Plains'
 import Mountain from '../Cell/Terrain/Mountain'
 import Forest from '../Cell/Terrain/Forest'
-import { Town, Castle } from '../Cell/Structures/Structures'
+import { Town } from '../Cell/Structures/Structures'
 import Player from '../Player/Player'
 import Unit from '../Units/Unit'
 import { Soldier } from '../Units/Units'
 import Citadel from '../Cell/Structures/Citadel'
 import naturalOrder from 'natural-order'
+import { plainToClass } from 'class-transformer'
+import Structure from '../Cell/Structures/Structure'
 
 export default class Scenario {
   private x: number
@@ -223,6 +224,29 @@ export default class Scenario {
       moveCost += unit.move
     })
     return moveCost
+  }
+
+  public export = () => {
+    return JSON.stringify(this)
+  }
+
+  public import = json => {
+    const data = JSON.parse(json)
+    this.x = data.x
+    this.y = data.y
+    this.grid = data.grid.map(row =>
+      row.map((cell: Cell) => {
+        const thisCell = plainToClass(Cell, { ...cell })
+        thisCell.structure = cell.structure
+          ? plainToClass(Structure, { ...cell.structure })
+          : cell.structure
+        return thisCell
+      })
+    )
+    this.players = data.players.map(player => plainToClass(Player, player))
+    this.units = data.units.map(unit => plainToClass(Unit, unit))
+    this.activePlayer = data.activePlayer
+    this.objectives = data.objectives
   }
 }
 

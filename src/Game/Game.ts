@@ -9,7 +9,8 @@ import {
   Knight,
   Priest,
   Wizard,
-  Warrior
+  Warrior,
+  findUnit
 } from '../Units/Units'
 import Structure from '../Cell/Structures/Structure'
 import Academy from '../Cell/Structures/Academy'
@@ -111,7 +112,8 @@ export default class Game {
     this.selectedUnitList = []
   }
 
-  public buildUnit = (unit: typeof Unit) => {
+  public buildUnit = (unitName: string) => {
+    const unit = findUnit(unitName)
     return new Promise((resolve, reject) => {
       const newUnit = new unit(
         this.selectedCell().x,
@@ -476,28 +478,7 @@ export default class Game {
       const option = s.action.split(':')
       this.selectCell(s.x, s.y)
 
-      const unit = () => {
-        switch (option[1]) {
-          case 'Soldier':
-            return Soldier
-          case 'Warrior':
-            return Warrior
-          case 'Archer':
-            return Archer
-          case 'Rogue':
-            return Rogue
-          case 'Knight':
-            return Knight
-          case 'Priest':
-            return Priest
-          case 'Wizard':
-            return Wizard
-          default:
-            return Soldier
-        }
-      }
-
-      return this.buildUnit(unit())
+      return this.buildUnit(option[1])
     }
     if (s.action.includes('upgrade')) {
       const option = s.action.split(':')
@@ -558,4 +539,16 @@ export default class Game {
   public Units = () => this.scenario.Units()
   public Cells = () => this.scenario.Cells()
   public Players = () => this.scenario.Players()
+
+  public export = () => {
+    return JSON.stringify({ ...this, scenario: this.scenario.export() })
+  }
+
+  public import = (json: string) => {
+    const data = JSON.parse(json)
+    this.scenario.import(data.scenario)
+    this.x = data.x
+    this.y = data.y
+    this.gameOver = data.gameOver
+  }
 }
