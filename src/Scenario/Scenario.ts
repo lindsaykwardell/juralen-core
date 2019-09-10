@@ -48,7 +48,13 @@ export default class Scenario {
         const x = Math.floor(Math.random() * this.x)
         const y = Math.floor(Math.random() * this.y)
         const cell = this.grid[y][x]
-        if (!cell.structure) {
+        if (
+          !cell.structure &&
+          this.Cells()
+            .withinDistance(1, { x, y })
+            .hasStructure()
+            .count() <= 0
+        ) {
           cell.controlledBy = player.id
           cell.buildStructure(Citadel)
           for (let i = 0; i < 3; i++) {
