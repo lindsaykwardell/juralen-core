@@ -1,18 +1,8 @@
 import Scenario from '../../Scenario/Scenario'
 import Cell from '../../Cell/Cell'
 import Unit from '../../Units/Unit'
-import Player from '../Player'
 import { plainToClass } from 'class-transformer'
 import Structure from '../../Cell/Structures/Structure'
-import {
-  Soldier,
-  Archer,
-  Rogue,
-  Knight,
-  Wizard,
-  Priest,
-  Warrior
-} from '../../Units/Units'
 
 export default (scenario: Scenario) => {
   const thisPlayer = scenario.Players().is(scenario.activePlayer)!
@@ -32,19 +22,19 @@ export default (scenario: Scenario) => {
           cell.structure.buildUnits.forEach(unit => {
             const cost = () => {
               switch (unit.toLowerCase()) {
-                case "soldier":
+                case 'soldier':
                   return 1
-                case "warrior":
+                case 'warrior':
                   return 2
-                case "archer":
+                case 'archer':
                   return 3
-                case "priest":
+                case 'priest':
                   return 4
-                case "rogue":
+                case 'rogue':
                   return 5
-                case "knight":
+                case 'knight':
                   return 6
-                case "wizard":
+                case 'wizard':
                   return 7
                 default:
                   return 0
