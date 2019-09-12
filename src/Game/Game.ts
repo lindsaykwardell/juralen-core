@@ -25,8 +25,6 @@ export default class Game {
   private y: number
   public selectedUnitList: string[]
   public gameOver: boolean = false
-  public grid: Cell[][]
-  public units: Unit[]
 
   constructor(
     playerList: { name: string; isHuman: boolean; color: string }[],
@@ -41,8 +39,6 @@ export default class Game {
     this.x = startingCell.x
     this.y = startingCell.y
     this.selectedUnitList = []
-    this.grid = this.scenario.grid
-    this.units = this.scenario.units
 
     console.log('The Game has begun!')
     console.log(`${this.activePlayer()!.name} will begin.`)
@@ -439,11 +435,12 @@ export default class Game {
     return this.activePlayer()!.ai(this.scenario)
   }
 
-  public runComputerTurn = () => {
+  public runComputerTurn = (callback: () => void) => {
     return new Promise((resolve, reject) => {
       let prevOption = {}
       let prevCount = 0
       const runningTurn = setInterval(() => {
+        callback()
         const options = this.analyze()
 
         let action = options.length > 0 ? options[0] : null

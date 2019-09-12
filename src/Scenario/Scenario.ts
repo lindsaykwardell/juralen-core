@@ -159,7 +159,7 @@ export default class Scenario {
       .hasNotLost()
       .get()
       .forEach(player => {
-        let score = player.resources.gold
+        let score = 0
 
         score += this.Cells()
           .controlledBy(player.id)

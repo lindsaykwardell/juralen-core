@@ -74,8 +74,8 @@ ${
     console.log(
       table(
         game
-          .grid
-          .map(row =>
+          .Cells()
+          .grid.map(row =>
             row.map(cell =>
               game.selectedCell().x === cell.x &&
               game.selectedCell().y === cell.y
@@ -117,7 +117,7 @@ Units: ${units}
         .findIndex(score => score.id === game.activePlayer()!.id) + 1}`
     )
     if (!game.activePlayer()!.isHuman) {
-      await game.runComputerTurn()
+      await game.runComputerTurn(() => null)
       await game.endTurn()
     } else {
       const input: string = await askQuestion(
