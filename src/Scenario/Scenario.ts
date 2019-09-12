@@ -145,11 +145,15 @@ export default class Scenario {
   }
 
   public firstPlace = () => {
-    return this.checkScores()[0]
+    return this.checkScores().filter(
+      player => player.id !== this.activePlayer
+    )[0]
   }
 
   public lastPlace = () => {
-    return this.checkScores().pop()
+    return this.checkScores()
+      .filter(player => player.id !== this.activePlayer)
+      .pop()
   }
 
   public checkScores = (): { id: string; name: string; score: number }[] => {
@@ -173,9 +177,10 @@ export default class Scenario {
             .controlledBy(player.id)
             .hasStructure(['Citadel'])
             .count() * 2
-        score += this.Units()
+        this.Units()
           .controlledBy(player.id)
-          .count()
+          .get()
+          .forEach(unit => (score += unit.cost))
 
         scorecard.push({ id: player.id, name: player.name, score })
       })
