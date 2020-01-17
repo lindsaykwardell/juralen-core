@@ -3,13 +3,6 @@ import Scenario from '../Scenario/Scenario'
 import Unit from '../Units/Unit'
 import Castle from '../Cell/Structures/Castle'
 import {
-  Soldier,
-  Archer,
-  Rogue,
-  Knight,
-  Priest,
-  Wizard,
-  Warrior,
   findUnit
 } from '../Units/Units'
 import Structure from '../Cell/Structures/Structure'
@@ -25,10 +18,12 @@ export default class Game {
   private y: number
   public selectedUnitList: string[]
   public gameOver: boolean = false
+  private callback: () => void
 
   constructor(
     playerList: { name: string; isHuman: boolean; color: string }[],
-    grid: { x: number; y: number } = { x: 9, y: 9 }
+    grid: { x: number; y: number } = { x: 9, y: 9 },
+    callback = () => null
   ) {
     this.scenario = new Scenario(playerList, grid)
     const startingCell = this.scenario
@@ -39,10 +34,15 @@ export default class Game {
     this.x = startingCell.x
     this.y = startingCell.y
     this.selectedUnitList = []
+    this.callback = callback
 
     console.log('The Game has begun!')
     console.log(`${this.activePlayer()!.name} will begin.`)
     console.log(' ')
+  }
+
+  public init = () => {
+    this.callback()
   }
 
   public scorecard = () => {
@@ -57,10 +57,12 @@ export default class Game {
     this.x = x
     this.y = y
     this.selectedUnitList = []
+    this.callback()
   }
 
   public selectUnit = (id: string) => {
     this.selectedUnitList.push(id)
+    this.callback()
   }
 
   public selectableUnits = () => {
@@ -74,15 +76,35 @@ export default class Game {
       )
   }
 
-  public upgradeTo = (struct: typeof Structure) => {
+  public upgradeTo = (structName: string) => {
     return new Promise((resolve, reject) => {
       if (
         this.selectedCell().structure &&
         this.selectedCell().structure!.name === 'Town' &&
         this.activePlayer()!.resources.gold >= 7
       ) {
+        let struct: typeof Structure = Structure
+        switch (structName) {
+          case 'castle':
+            struct = Castle
+            break
+          case 'academy':
+            struct = Academy
+            break
+          case 'temple':
+            struct = Temple
+            break
+          case 'city':
+            struct = City
+            break
+          case 'lodge':
+            struct = Lodge
+            break
+        }
+
         this.activePlayer()!.resources.gold -= 7
         this.selectedCell().buildStructure(struct)
+        this.callback()
         resolve(
           `A ${struct.structureName} has been built at ${
             this.selectedCell().x
@@ -99,14 +121,17 @@ export default class Game {
       .controlledBy(this.activePlayer()!.id)
       .get()
       .map(unit => unit.id)
+    this.callback()
   }
 
   public unselectUnit = (id: string) => {
     this.selectedUnitList = this.selectedUnitList.filter(unit => unit !== id)
+    this.callback()
   }
 
   public unselectAllUnits = () => {
     this.selectedUnitList = []
+    this.callback()
   }
 
   public buildUnit = (unitName: string) => {
@@ -136,6 +161,7 @@ export default class Game {
           }, ${this.selectedCell().y}`
         )
       }
+      this.callback()
     })
   }
 
@@ -154,7 +180,13 @@ export default class Game {
 
   public moveSelectedUnits = (x: number, y: number) => {
     return new Promise((resolve, reject) => {
-      if (this.isInRange(x, y)) {
+      if (
+        this.isInRange(x, y) &&
+        this.getDistance(
+          { x: this.selectedCell().x, y: this.selectedCell().y },
+          { x, y }
+        ) > 0
+      ) {
         this.activePlayer()!.resources.actions -=
           this.getMoveCost() *
           this.getDistance(
@@ -186,6 +218,7 @@ export default class Game {
       } else {
         reject("We can't get there.")
       }
+      this.callback()
     })
   }
 
@@ -419,6 +452,7 @@ export default class Game {
         reject()
       }
       this.gatherResources()
+      this.callback()
       resolve(`${this.activePlayer()!.name}'s turn`)
     })
   }
@@ -435,12 +469,12 @@ export default class Game {
     return this.activePlayer()!.ai(this.scenario)
   }
 
-  public runComputerTurn = (callback: () => void) => {
+  public runComputerTurn = () => {
     return new Promise((resolve, reject) => {
       let prevOption = {}
       let prevCount = 0
       const runningTurn = setInterval(() => {
-        callback()
+        this.callback()
         const options = this.analyze()
 
         let action = options.length > 0 ? options[0] : null
@@ -482,18 +516,7 @@ export default class Game {
       const option = s.action.split(':')
       this.selectCell(s.x, s.y)
 
-      switch (option[1].toLowerCase()) {
-        case 'castle':
-          return this.upgradeTo(Castle)
-        case 'academy':
-          return this.upgradeTo(Academy)
-        case 'temple':
-          return this.upgradeTo(Temple)
-        case 'city':
-          return this.upgradeTo(City)
-        case 'lodge':
-          return this.upgradeTo(Lodge)
-      }
+      return this.upgradeTo(option[1].toLowerCase())
     }
     if (s.action.includes('move') || s.action.includes('attack')) {
       this.selectCell(s.x, s.y)

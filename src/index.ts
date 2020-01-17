@@ -117,7 +117,7 @@ Units: ${units}
         .findIndex(score => score.id === game.activePlayer()!.id) + 1}`
     )
     if (!game.activePlayer()!.isHuman) {
-      await game.runComputerTurn(() => null)
+      await game.runComputerTurn()
       await game.endTurn()
     } else {
       const input: string = await askQuestion(
@@ -270,32 +270,12 @@ Units: ${units}`)
         case 'build':
           switch (command[1]) {
             case 'castle':
-              await game
-                .upgradeTo(Castle)
-                .then(res => console.log(res))
-                .catch(res => console.log(res))
-              break
             case 'academy':
-              await game
-                .upgradeTo(Academy)
-                .then(res => console.log(res))
-                .catch(res => console.log(res))
-              break
             case 'lodge':
-              await game
-                .upgradeTo(Lodge)
-                .then(res => console.log(res))
-                .catch(res => console.log(res))
-              break
             case 'temple':
-              await game
-                .upgradeTo(Temple)
-                .then(res => console.log(res))
-                .catch(res => console.log(res))
-              break
             case 'city':
               await game
-                .upgradeTo(City)
+                .upgradeTo(command[1])
                 .then(res => console.log(res))
                 .catch(res => console.log(res))
               break
